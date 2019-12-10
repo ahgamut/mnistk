@@ -17,7 +17,14 @@ import time
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from mnistk import DataGen, construct
-from mnistk.utils import plot_structure, save_predictions, save_props, plot_losses
+from mnistk.utils import (
+    plot_structure,
+    plot_predictions,
+    save_props,
+    plot_losses,
+    save_predictions,
+    plot_images,
+)
 from mnistk.loss import LossFunc
 from mnistk.optimizer import get_optimizer
 
@@ -51,6 +58,7 @@ class Trainer(object):
 
         self._dest = os.path.join(dest, str(self.net.__class__.__name__).split(".")[-1])
         self.run_dest = None
+        self.run_name = run_name
         runs = os.path.join(self._dest, "runs/")
         this_run = os.path.join(runs, run_name)
         if not os.path.exists(self._dest):
@@ -84,7 +92,7 @@ class Trainer(object):
         self.net_state["name"] = self.net.__class__.__name__
         self.net_state["#layers"] = len(list(self.net.children()))
         self.net_state["#params"] = sum(
-            q.numel() for q in self.net.parameters(recurse=True)
+            q.numel() for q in self.net.parameters(recurse=True) if q.requires_grad
         )
         self.net_state["time per epoch"] = 0
         # self.net_state["memory per pass"] = 0
@@ -116,7 +124,9 @@ class Trainer(object):
             loss = np.mean(ep_losses)
             self.writer.add_scalar(tag="train/loss", scalar_value=loss, global_step=i)
             self.train_losses.append(loss)
-            print("Epoch {:4}: Training Loss = {:1.3f}".format(i, loss))
+            print(
+                "Epoch {:4}: Training Loss = {:1.3f}".format(i, loss), file=sys.stderr
+            )
             if i % self._settings.test_every == 0:
                 self.test(epoch=i)
         self.net_state["time per epoch"] = np.mean(time_spent)
@@ -135,32 +145,28 @@ class Trainer(object):
             loss = self.loss_fn(y_true, y_pred)
             preds.append(y_pred.detach().cpu())
             trues.append(y_true.detach().cpu())
-
             ep_losses.append(loss.item())
 
         loss = np.mean(ep_losses)
+        trues = torch.cat(trues).numpy()
+        preds = torch.cat(preds).numpy()
+
         print("Epoch {:4}: Test Loss = {:1.3f}".format(epoch, loss))
         if self._settings.save_predictions:
-            self.net_state["test loss"][epoch] = loss
-            backprops = self.get_backprops()
-            aucs, accu = save_predictions(
-                epoch,
-                torch.cat(trues).numpy(),
-                torch.cat(preds).numpy(),
-                backprops,
-                self.run_dest,
-                writer=self.writer,
+            aucs, accu = plot_predictions(
+                epoch, loss, trues, preds, self.run_dest, writer=self.writer
             )
+            self.net_state["test loss"][epoch] = loss
             self.net_state["test AUC"][epoch] = aucs
             self.net_state["test accuracy"][epoch] = accu
-            self.writer.add_scalar(
-                tag="test/loss", scalar_value=loss, global_step=epoch
+            print(
+                "Epoch {:4}: Test Accuracy = {:2.1f}%".format(
+                    epoch, 100 * np.mean(accu)
+                ),
+                file=sys.stderr,
             )
-            self.writer.add_scalar(tag="test/auc", scalar_value=aucs, global_step=epoch)
-            self.writer.add_scalar(
-                tag="test/accuracy", scalar_value=accu, global_step=epoch
-            )
-            print("Epoch {:4}: Test Accuracy = {:2.1f}%".format(epoch, 100 * accu))
+            save_predictions(preds, self._dest, self.run_name, epoch)
+            plot_images(epoch, *self.get_backprops(), self.run_dest, writer=self.writer)
 
         if self._settings.save_snapshot:
             torch.save(
@@ -171,8 +177,8 @@ class Trainer(object):
         self.net.train()
 
     def get_backprops(self):
-        backprops = []
-        f = lambda x: x.detach().cpu().numpy()
+        inps = []
+        outs = []
         for yp, xp in self.samples:
             x, y_true = (
                 xp.unsqueeze(0).to(self.device),
@@ -180,11 +186,9 @@ class Trainer(object):
             )
             x.requires_grad_(True)
             y_pred = self.net(x)
-            y_pred[0, yp].backward()
-            # loss = self.loss_fn(y_true, y_pred)
-            # loss.backward()
-            backprops.append((f(y_true)[0], f(x)[0, 0], f(x.grad)[0, 0]))
-        return backprops
+            inps.append(x)
+            outs.append(y_pred)
+        return inps, outs
 
     def save(self):
         self.end_props()
@@ -192,22 +196,11 @@ class Trainer(object):
         self.writer.add_graph(
             model=self.net, input_to_model=(self.samples[0][1].unsqueeze(0),)
         )
-        for x in self.optimizer.state_dict()["param_groups"]:
-            ans = []
-            for k, v in x.items():
-                if k == "params":
-                    continue
-                if v.__class__ in (int, float, str, bool, torch.Tensor):
-                    ans.append((k, v))
-                elif isinstance(v, tuple) or isinstance(v, list):
-                    ans.append((k, torch.Tensor(v)))
-            self.writer.add_hparams(dict(ans), {})
-
-        print("Saving properties...")
+        print("Saving properties...", file=sys.stderr)
         save_props(self.net_state, self.run_dest)
 
         if self._settings.plot_structure:
-            print("Plotting Network structure as SVG...")
+            print("Plotting Network structure as SVG...", file=sys.stderr)
             plot_structure(
                 self.net,
                 tuple([1] + self.net.in_shape),
@@ -216,7 +209,7 @@ class Trainer(object):
             )
 
         if self._settings.plot_losses:
-            print("Plotting training losses...")
+            print("Plotting training losses...", file=sys.stderr)
             plot_losses(
                 self.net_state["train loss"], self.net_state["test loss"], self.run_dest
             )

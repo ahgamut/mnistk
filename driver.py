@@ -33,6 +33,7 @@ def main(id_, run, params, dest):
     trainer.summary()
     trainer.train()
     trainer.save()
+    print(trainer._dest)
 
 
 if __name__ == "__main__":

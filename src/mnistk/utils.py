@@ -47,84 +47,116 @@ def plot_losses(train_losses, test_losses, directory):
     plt.close()
 
 
-def plot_hist_splits(axis, y_true, y_pred):
-    x2 = y_pred[y_true == 1]
-    x2h, x2b = np.histogram(x2, bins=20)
-    x2w = (x2b[-1] - x2b[0]) / (len(x2b) - 1)
-    x2b = x2b[:-1]
-
-    x1 = y_pred[y_true == 0]
-    x1h, x1b = np.histogram(x1, bins=x2b)
-    x1w = (x1b[-1] - x1b[0]) / (len(x1b) - 1)
-    x1b = x1b[:-1]
-
-    axis.bar(x1b, x1h, align="edge", color="#88880088", label="truth=0", width=x1w)
-    axis.bar(x2b, x2h, align="edge", color="#00888888", label="truth=1", width=x2w)
-    axis.set_xlabel("Predicted Value")
-    axis.set_ylabel("Frequency")
-    axis.set_title("Distribution of Predictions")
-    axis.legend()
-    return (x1h, x1b), (x2h, x2b)
+def plot_error_splits(axis, y_true, y_pred, i):
+    var_inv = [np.std(y_pred[y_true == j]) for j in range(10)]
+    mx, mn = max(var_inv), min(var_inv)
+    var_inv = [0.05 + 0.95 * (x - mn) / (mx - mn) for x in var_inv]
+    for j in range(10):
+        yj = y_pred[y_true == j]
+        xj = [j] * len(yj)
+        axis.scatter(yj, xj, s=var_inv[j], alpha=var_inv[j])
+    axis.set_yticks(list(range(10)))
+    axis.set_xlabel("Negative LogLikelihood")
+    axis.set_ylabel("True Value")
+    axis.set_title("Spread of Prediction = {} wrt Truth".format(i))
 
 
-def plot_roc(axis, y_true, y_pred):
+# TODO: What kind of wrong predictions are there? <11-12-19> #
+def plot_hist_split(axis, y_true, y_pred, i):
+    pass
+
+
+def plot_roc(axis, y_true, y_pred, i):
     fpr, tpr, _ = roc_curve(y_true, y_pred)
     score = auc(fpr, tpr)
     axis.plot(fpr, tpr, color="#00FF00FF", label="AUC = {:.6f}".format(score))
     axis.set_ylabel("True Positive Rate")
     axis.set_xlabel("False Positive Rate")
-    axis.set_title("ROC Curve")
+    axis.set_title("ROC for Predicting {}".format(i))
     axis.legend()
     return score
 
 
-def plot_images(ax1, img, ax2, grad):
-    ax1.imshow(img, cmap="gray_r")
-    ax1.set_title("Sample Image")
-    ax1.set_xticks([])
-    ax1.set_yticks([])
-    ax2.imshow(grad, cmap="RdBu_r")
+def plot_images(epoch, img_tensors, pred_tensors, directory, writer=None):
+    def clear_ticks(axis):
+        axis.set_xticks([])
+        axis.set_yticks([])
 
-    nrm = Normalize(grad.min(), grad.max())
-    mab = plt.cm.ScalarMappable(cmap="RdBu_r", norm=nrm)
-    mab.set_array([])
-    cb1 = ax2.figure.colorbar(
-        mab,
-        cax=None,
-        ax=ax2,
-        orientation="vertical",
-        fraction=0.1,
-        ticks=np.linspace(grad.min(), grad.max(), 5),
-        format="%.4f",
-        alpha=0.7,
-    )
-    ax2.set_title("RF Gradient")
-    ax2.set_xticks([])
-    ax2.set_yticks([])
+    def img(axis, z):
+        clear_ticks(axis)
+        z2, _, _ = nrm(z)
+        axis.imshow(z2, cmap="gray_r", vmin=z2.min(), vmax=z2.max())
+
+    def bprop(axis, z, n, **kwargs):
+        clear_ticks(axis)
+        axis.imshow(z, cmap="RdBu_r")
+        axis.set_title("pred = {}".format(n))
+
+    def nrm(z):
+        z2 = z.detach().cpu().numpy()[0, 0, :, :]
+        return z2, z2.min(), z2.max()
+
+    with PdfPages(os.path.join(directory, "rf-{}.pdf".format(epoch))) as pdf:
+        for i in range(10):
+            fig = plt.figure(figsize=(10, 6))
+            gsp = fig.add_gridspec(nrows=3, ncols=5)
+            axs = list(fig.add_subplot(gsp[0, i]) for i in range(5)) + list(
+                fig.add_subplot(gsp[2, i]) for i in range(5)
+            )
+            iax = fig.add_subplot(gsp[1, 2])
+            img(iax, img_tensors[i])
+
+            data = []
+            for j in range(10):
+                if img_tensors[i].grad is not None:
+                    img_tensors[i].grad = None
+                pred_tensors[i][0, j].backward(retain_graph=True)
+                data.append(nrm(img_tensors[i].grad))
+
+            arrs, mins, maxs = zip(*data)
+            MIN, MAX = min(mins), max(maxs)
+            for j in range(10):
+                bprop(axs[j], z=arrs[j], n=j, vmin=MIN, vmax=MAX)
+            fig.suptitle("Receptive field for {}".format(i))
+            fig.subplots_adjust(wspace=0, hspace=0.5, right=0.9)
+            if writer is not None:
+                writer.add_figure(
+                    tag="predictions/{}/recfield".format(i),
+                    figure=fig,
+                    global_step=epoch,
+                    close=False,
+                )
+
+            pdf.savefig(fig, dpi=300)
+            plt.close()
+        d = pdf.infodict()
+        d["Title"] = "Gradients at Epoch {}".format(epoch)
 
 
-def save_predictions(epoch, y_true, y_pred, bprops, directory, writer=None):
+def plot_predictions(epoch, loss, y_true, y_pred, directory, writer=None):
     aucs = []
-    accu = np.sum(np.int32(np.argmax(y_pred, axis=1) == y_true)) / len(y_true)
-    sample_grad = np.zeros((2, 1, 28, 28), np.float32)
+    accu = []
+    preds = np.argmax(y_pred, axis=1)
     with PdfPages(os.path.join(directory, "test-{}.pdf".format(epoch))) as pdf:
-        for i, sample, grad in bprops:
-            fig, axs = plt.subplots(2, 2)
-            ax = axs.ravel()
+        for i in range(10):
+            fig = plt.figure(figsize=(9, 6))
+            gsp = fig.add_gridspec(2, 3)
+            ax = [fig.add_subplot(gsp[:, 0]), fig.add_subplot(gsp[:, 1:])]
             fig.suptitle("Network Predictions for {}".format(i))
+
+            pred_check = preds[y_true == i]
+            accu.append(np.sum(pred_check == i) / len(pred_check))
+
             yt = np.int32(y_true == i)
             yp = y_pred[:, i]
-            aucs.append(plot_roc(ax[0], yt, yp))
-            plot_hist_splits(ax[1], yt, yp)
-            plot_images(ax[2], sample, ax[3], grad)
+            aucs.append(plot_roc(ax[0], yt, yp, i))
+            plot_error_splits(ax[1], y_true, yp, i)
 
             fig.subplots_adjust(wspace=0.5, hspace=0.5)
             pdf.savefig(fig, dpi=300)
             if writer is not None:
-                sample_grad[0, 0] = sample
-                sample_grad[1, 0] = grad
                 writer.add_figure(
-                    tag="predictions/{}/overall".format(i),
+                    tag="predictions/{}/spread".format(i),
                     figure=fig,
                     global_step=epoch,
                     close=False,
@@ -132,22 +164,33 @@ def save_predictions(epoch, y_true, y_pred, bprops, directory, writer=None):
                 writer.add_scalar(
                     "predictions/{}/auc".format(i), aucs[-1], global_step=epoch
                 )
+                writer.add_scalar(
+                    "predictions/{}/accuracy".format(i), accu[-1], global_step=epoch
+                )
 
             plt.close()
         d = pdf.infodict()
         d["Title"] = "Predictions at Epoch {}".format(epoch)
+    if writer is not None:
+        writer.add_scalar(tag="overall_test/loss", scalar_value=loss, global_step=epoch)
+        writer.add_scalar(
+            tag="overall_test/auc", scalar_value=np.mean(aucs), global_step=epoch
+        )
+        writer.add_scalar(
+            tag="overall_test/accuracy", scalar_value=np.mean(accu), global_step=epoch
+        )
+    return aucs, accu
 
-    with h5py.File(os.path.join(directory, "test-{}.h5".format(epoch)), "w") as f:
-        g1 = f.create_group("roc")
-        g1.create_dataset("truth", data=y_true)
-        g1.create_dataset("preds", data=y_pred)
 
-        g2 = f.create_group("samples")
-        for i, sample, grad in bprops:
-            g2.create_dataset("sample_{}".format(i), data=sample)
-            g2.create_dataset("grad_{}".format(i), data=grad)
-
-    return np.mean(aucs), accu
+def save_predictions(y_pred, directory, run_name, epoch):
+    predfile = os.path.join(directory, "predictions.h5")
+    with h5py.File(predfile, "a") as f:  # rwa, create if exist
+        name = "{}/{}".format(run_name, epoch)
+        if f.get(name) is not None:
+            ds = f.get(name)
+            ds = y_pred
+        else:
+            f.create_dataset(name, data=y_pred)
 
 
 def save_props(state, directory):
