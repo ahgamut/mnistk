@@ -1,0 +1,12 @@
+{
+    "epochs":1,
+    "test_every":1,
+    "train_batch_size":25,
+    "test_batch_size":10,
+    "use_gpu":true,
+    "save_predictions":true,
+    "save_snapshot":false,
+    "plot_structure":true,
+    "plot_losses":true,
+    "hypers": {"lr":0.002, "amsgrad":true}
+}
