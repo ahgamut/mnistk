@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    mnistk.datagen
+    mnistk.run.datagen
     ~~~~~~~~~~~~~~~~
 
     Contains the data generator class and helper methods.

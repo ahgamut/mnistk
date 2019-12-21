@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    mnistk.loss
+    mnistk.run.loss
     ~~~~~~~~~~~~~
 
     Implements a LossFunc class that takes care of

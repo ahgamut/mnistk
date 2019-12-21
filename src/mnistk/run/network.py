@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    mnistk.network
+    mnistk.run.network
     ~~~~~~~~~~~~~~~~
 
     Generates networks as defined by the requirements
@@ -18,4 +18,15 @@ from mnistk.networks import NET_LIST
 
 def construct(N=0):
     mod = NET_LIST[N]()
+    name = mod.__class__.__name__
+    if "Conv2d" in name or "ResNet" in name:
+        mod.in_shape = [1, 28, 28]
+    elif "Conv3d" in name:
+        mod.in_shape = [1, 16, 7, 7]
+    elif "Conv1d" in name:
+        mod.in_shape = [16, 49]
+    elif "Linear" in name:
+        mod.in_shape = [784]
+    else:
+        mod.in_shape = [784]
     return mod

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    mnistk.trainer
+    mnistk.run.trainer
     ~~~~~~~~~~~~~~~~
 
     Controller class for generating data,
@@ -16,17 +16,18 @@ import json
 import time
 import torch
 from torch.utils.tensorboard import SummaryWriter
-from mnistk import DataGen, construct
-from mnistk.utils import (
+from mnistk.run import DataGen, construct
+from mnistk.run.utils import (
     plot_structure,
     plot_predictions,
     save_props,
     plot_losses,
     save_predictions,
     plot_images,
+    approx_mem_usage,
 )
-from mnistk.loss import LossFunc
-from mnistk.optimizer import get_optimizer
+from mnistk.run.loss import LossFunc
+from mnistk.run.optimizer import get_optimizer
 
 
 class Trainer(object):
@@ -95,7 +96,7 @@ class Trainer(object):
             q.numel() for q in self.net.parameters(recurse=True) if q.requires_grad
         )
         self.net_state["time per epoch"] = 0
-        # self.net_state["memory per pass"] = 0
+        self.net_state["memory per pass"] = 0
         self.net_state["test loss"] = {}
         self.net_state["test AUC"] = {}
         self.net_state["test accuracy"] = {}
@@ -196,20 +197,23 @@ class Trainer(object):
         self.writer.add_graph(
             model=self.net, input_to_model=(self.samples[0][1].unsqueeze(0),)
         )
-        print("Saving properties...", file=sys.stderr)
-        save_props(self.net_state, self.run_dest)
 
         if self._settings.plot_structure:
             print("Plotting Network structure as SVG...", file=sys.stderr)
-            plot_structure(
+            rec = plot_structure(
                 self.net,
-                tuple([1] + self.net.in_shape),
+                tuple([1] + list(self.net.in_shape)),
                 directory=self._dest,
                 fmt="svg",
             )
-
+            if rec is not None:
+                self.net_state["memory per pass"] = approx_mem_usage(rec)
+                del rec
         if self._settings.plot_losses:
             print("Plotting training losses...", file=sys.stderr)
             plot_losses(
                 self.net_state["train loss"], self.net_state["test loss"], self.run_dest
             )
+
+        print("Saving properties...", file=sys.stderr)
+        save_props(self.net_state, self.run_dest)

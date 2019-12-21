@@ -30,7 +30,6 @@ def main(id_, run, params, dest):
     """
     settings = mnistk.Settings(**json.load(params))
     trainer = mnistk.Trainer(settings, dest, net_id=id_, run_name=run)
-    trainer.summary()
     trainer.train()
     trainer.save()
     print(trainer._dest)

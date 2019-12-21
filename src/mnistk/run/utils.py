@@ -9,8 +9,6 @@
     :license: see LICENSE for more details.
 """
 from matplotlib import pyplot as plt
-from matplotlib.colors import Normalize
-from matplotlib.colorbar import ColorbarBase
 from matplotlib.backends.backend_pdf import PdfPages
 from sklearn.metrics import roc_curve, auc
 import numpy as np
@@ -26,12 +24,27 @@ except Exception as e:
 
 def plot_structure(net, input_shapes, directory, fmt="svg", writer=None):
     try:
-        g = torchviz.make_dot(net, input_shapes, render_depth=1)
+        g, rec = torchviz.make_dot(net, input_shapes, render_depth=1)
         g.format = fmt
         g.render(filename="network", directory=directory, view=False, cleanup=True)
+        return rec
     except Exception as e:
         print(e)
         print("Unable to Visualize Network!!")
+
+
+# TODO: A better measure of memory <21-12-19> #
+def approx_mem_usage(rec):
+    mem = 0
+    for n in rec.nodes.values():
+        n.duplicates = 0
+    for fn in rec.node_set:
+        rec.nodes[fn].duplicates += 1
+    ans = list([rec.nodes[x] for x in rec.node_set if x is not None])
+    for n in ans:
+        if hasattr(n.fn, "size"):
+            mem += n.fn.numel() / n.duplicates
+    return mem
 
 
 def plot_losses(train_losses, test_losses, directory):
@@ -48,22 +61,48 @@ def plot_losses(train_losses, test_losses, directory):
 
 
 def plot_error_splits(axis, y_true, y_pred, i):
-    var_inv = [np.std(y_pred[y_true == j]) for j in range(10)]
-    mx, mn = max(var_inv), min(var_inv)
-    var_inv = [0.05 + 0.95 * (x - mn) / (mx - mn) for x in var_inv]
-    for j in range(10):
-        yj = y_pred[y_true == j]
-        xj = [j] * len(yj)
-        axis.scatter(yj, xj, s=var_inv[j], alpha=var_inv[j])
-    axis.set_yticks(list(range(10)))
-    axis.set_xlabel("Negative LogLikelihood")
-    axis.set_ylabel("True Value")
-    axis.set_title("Spread of Prediction = {} wrt Truth".format(i))
+    js = np.array([x for x in range(10)])
+    width = 0.25
+    f_neg = [np.sum((y_pred == j) & (y_true == i)) for j in js]
+    f_pos = [np.sum((y_pred == i) & (y_true == j)) for j in js]
+    f_neg[i] = 0
+    f_pos[i] = 0
+    fnb = axis.bar(
+        x=js - width / 2,
+        height=f_neg,
+        width=width,
+        edgecolor="#0000FFFF",
+        facecolor="#0000FF88",
+        label="False Negative",
+    )
+    fpb = axis.bar(
+        x=js + width / 2,
+        height=f_pos,
+        width=width,
+        edgecolor="#FF0000FF",
+        facecolor="#FF000088",
+        label="False Positive",
+    )
 
+    def text_above(rs, ls):
+        for r, l in zip(rs, ls):
+            if l == 0:
+                continue
+            axis.text(
+                r.get_x() + 0.5 * r.get_width(),
+                r.get_height() * 1.01,
+                str(l),
+                ha="center",
+                va="bottom",
+            )
 
-# TODO: What kind of wrong predictions are there? <11-12-19> #
-def plot_hist_split(axis, y_true, y_pred, i):
-    pass
+    text_above(fnb, f_neg)
+    text_above(fpb, f_pos)
+    axis.set_xticks(js)
+    axis.set_xlabel("Prediction")
+    axis.set_ylabel("Frequency")
+    axis.set_title("Distribution of WRONG Predictions")
+    axis.legend()
 
 
 def plot_roc(axis, y_true, y_pred, i):
@@ -85,12 +124,12 @@ def plot_images(epoch, img_tensors, pred_tensors, directory, writer=None):
     def img(axis, z):
         clear_ticks(axis)
         z2, _, _ = nrm(z)
-        axis.imshow(z2, cmap="gray_r", vmin=z2.min(), vmax=z2.max())
+        return axis.imshow(z2, cmap="gray_r", vmin=z2.min(), vmax=z2.max())
 
     def bprop(axis, z, n, **kwargs):
         clear_ticks(axis)
-        axis.imshow(z, cmap="RdBu_r")
         axis.set_title("pred = {}".format(n))
+        return axis.imshow(z, cmap="RdBu_r", **kwargs)
 
     def nrm(z):
         z2 = z.detach().cpu().numpy()[0, 0, :, :]
@@ -115,13 +154,18 @@ def plot_images(epoch, img_tensors, pred_tensors, directory, writer=None):
 
             arrs, mins, maxs = zip(*data)
             MIN, MAX = min(mins), max(maxs)
+            mappables = []
             for j in range(10):
-                bprop(axs[j], z=arrs[j], n=j, vmin=MIN, vmax=MAX)
+                mappables.append(bprop(axs[j], z=arrs[j], n=j, vmin=MIN, vmax=MAX))
             fig.suptitle("Receptive field for {}".format(i))
-            fig.subplots_adjust(wspace=0, hspace=0.5, right=0.9)
+            fig.subplots_adjust(
+                wspace=0, hspace=0.25, left=0.0, right=0.8, bottom=0.05, top=0.9
+            )
+            cax = fig.add_axes([0.85, 0.05, 0.03, 0.85])  # left bottom width height
+            cb = fig.colorbar(mappable=mappables[0], cax=cax, ax=axs)
             if writer is not None:
                 writer.add_figure(
-                    tag="predictions/{}/recfield".format(i),
+                    tag="predictions/{}/backprops".format(i),
                     figure=fig,
                     global_step=epoch,
                     close=False,
@@ -140,8 +184,8 @@ def plot_predictions(epoch, loss, y_true, y_pred, directory, writer=None):
     with PdfPages(os.path.join(directory, "test-{}.pdf".format(epoch))) as pdf:
         for i in range(10):
             fig = plt.figure(figsize=(9, 6))
-            gsp = fig.add_gridspec(2, 3)
-            ax = [fig.add_subplot(gsp[:, 0]), fig.add_subplot(gsp[:, 1:])]
+            gsp = fig.add_gridspec(6, 3)
+            ax = [fig.add_subplot(gsp[0:2, :]), fig.add_subplot(gsp[3:, :])]
             fig.suptitle("Network Predictions for {}".format(i))
 
             pred_check = preds[y_true == i]
@@ -150,9 +194,8 @@ def plot_predictions(epoch, loss, y_true, y_pred, directory, writer=None):
             yt = np.int32(y_true == i)
             yp = y_pred[:, i]
             aucs.append(plot_roc(ax[0], yt, yp, i))
-            plot_error_splits(ax[1], y_true, yp, i)
+            plot_error_splits(ax[1], y_true, preds, i)
 
-            fig.subplots_adjust(wspace=0.5, hspace=0.5)
             pdf.savefig(fig, dpi=300)
             if writer is not None:
                 writer.add_figure(

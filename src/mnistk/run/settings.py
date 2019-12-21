@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    mnistk.settings
+    mnistk.run.settings
     ~~~~~~~~~~~~~~~~~
 
     Extracts settings from JSON

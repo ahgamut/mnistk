@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    mnistk.optimizer
+    mnistk.run.optimizer
     ~~~~~~~~~~~~~~~~~~
 
     Handles all optimizer-related data
