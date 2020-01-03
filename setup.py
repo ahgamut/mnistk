@@ -11,7 +11,14 @@ setup(
     author_email="ahgamut@gmail.com",
     description="neural nets on the mnist dataset",
     long_description=readme_txt,
-    install_requires=["numpy", "click", "torch", "torchvision"],
-    url="https://github.com/ahgamut/mnist1000",
+    install_requires=[
+        "numpy",
+        "click",
+        "torch",
+        "torchvision",
+        "scikit-learn",
+        "dash==1.7.0",
+    ],
+    url="https://github.com/ahgamut/mnistk",
     package_dir={"": "src"},
 )

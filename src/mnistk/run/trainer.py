@@ -34,7 +34,7 @@ class Trainer(object):
 
     """
     Object class to handle the initialization,
-    training, testing, and saving of the
+    training, testing, and saving of the details
     for every run
     """
 
@@ -52,6 +52,7 @@ class Trainer(object):
         self.optimizer = get_optimizer(**settings.hypers)(self.net.parameters())
 
         self.net_state = dict()
+        self.run_name = run_name
         self.train_losses = []
         self.samples = []
         self.start_props()
@@ -59,7 +60,6 @@ class Trainer(object):
 
         self._dest = os.path.join(dest, str(self.net.__class__.__name__).split(".")[-1])
         self.run_dest = None
-        self.run_name = run_name
         runs = os.path.join(self._dest, "runs/")
         this_run = os.path.join(runs, run_name)
         if not os.path.exists(self._dest):
@@ -69,20 +69,6 @@ class Trainer(object):
         os.makedirs(this_run)
         self.run_dest = this_run
         self.writer = SummaryWriter(log_dir=this_run)
-
-    def class_samples(self):
-        count = 0
-        samples = {}
-        test = self.datagen.test()
-        for xt, yt in test:
-            for i, y in enumerate(yt):
-                if samples.get(y.item(), None) is None:
-                    samples[y.item()] = (y, xt[i])
-                    count += 1
-            if count == 10:
-                break
-        self.samples = sorted(samples.items(), key=lambda x: x[0])
-        self.samples = [x[1] for x in self.samples]
 
     def summary(self):
         print("Destination Folder:", self._dest)
@@ -95,14 +81,12 @@ class Trainer(object):
         self.net_state["#params"] = sum(
             q.numel() for q in self.net.parameters(recurse=True) if q.requires_grad
         )
+        self.net_state["run"] = self.run_name
         self.net_state["time per epoch"] = 0
         self.net_state["memory per pass"] = 0
         self.net_state["test loss"] = {}
         self.net_state["test AUC"] = {}
         self.net_state["test accuracy"] = {}
-
-    def end_props(self):
-        self.net_state["train loss"] = self.train_losses
 
     def train(self):
         self.train_losses = []
@@ -177,6 +161,20 @@ class Trainer(object):
 
         self.net.train()
 
+    def class_samples(self):
+        count = 0
+        samples = {}
+        test = self.datagen.test()
+        for xt, yt in test:
+            for i, y in enumerate(yt):
+                if samples.get(y.item(), None) is None:
+                    samples[y.item()] = (y, xt[i])
+                    count += 1
+            if count == 10:
+                break
+        self.samples = sorted(samples.items(), key=lambda x: x[0])
+        self.samples = [x[1] for x in self.samples]
+
     def get_backprops(self):
         inps = []
         outs = []
@@ -192,8 +190,7 @@ class Trainer(object):
         return inps, outs
 
     def save(self):
-        self.end_props()
-
+        self.net_state["train loss"] = self.train_losses
         self.writer.add_graph(
             model=self.net, input_to_model=(self.samples[0][1].unsqueeze(0),)
         )
