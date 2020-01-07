@@ -80,6 +80,8 @@ def view(result_dir, csv_path):
     View results in a Dash webapp
     """
     click.echo("Dash app should boot ...")
+    app = mnistk.get_application(csv_path)
+    app.run_server(debug=True, dev_tools_hot_reload=False)
 
 
 if __name__ == "__main__":

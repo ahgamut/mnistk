@@ -25,6 +25,7 @@ from mnistk.run.utils import (
     save_predictions,
     plot_images,
     approx_mem_usage,
+    op_count,
 )
 from mnistk.run.loss import LossFunc
 from mnistk.run.optimizer import get_optimizer
@@ -81,6 +82,7 @@ class Trainer(object):
         self.net_state["#params"] = sum(
             q.numel() for q in self.net.parameters(recurse=True) if q.requires_grad
         )
+        self.net_state["#ops"] = 0
         self.net_state["run"] = self.run_name
         self.net_state["time per epoch"] = 0
         self.net_state["memory per pass"] = 0
@@ -204,6 +206,7 @@ class Trainer(object):
                 fmt="svg",
             )
             if rec is not None:
+                self.net_state["#ops"] = op_count(rec)
                 self.net_state["memory per pass"] = approx_mem_usage(rec)
                 del rec
         if self._settings.plot_losses:

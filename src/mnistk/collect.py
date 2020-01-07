@@ -11,19 +11,22 @@
 from os.path import join as osjoin
 import json
 import glob
-import csv
+import pandas as pd
 
 
 def column_names():
     cols = (
         [
             "name",
+            "formname",
+            "groupname",
+            "run",
+            "epoch",
             "#layers",
             "#params",
-            "run",
+            "#ops",
             "time",
             "memory per pass",
-            "epoch",
             "loss",
         ]
         + ["AUC"]
@@ -34,12 +37,21 @@ def column_names():
     return cols
 
 
+def get_groupname(name):
+    for x in ["Basic", "ResNet", "Conv1d", "Conv2d", "Conv3d", "Linear"]:
+        if x in name:
+            return x
+    return name
+
+
 def append_json(csv_dict, json_path):
     with open(json_path) as f:
         jdict = json.load(f)
 
         for epoch in jdict["test loss"].keys():
             csv_dict["epoch"].append(int(epoch))
+            csv_dict["formname"].append(jdict["name"].split("_")[0])
+            csv_dict["groupname"].append(get_groupname(jdict["name"]))
             for k, v in jdict.items():
                 if k in ["test AUC", "test accuracy"]:
                     modkey = k.replace("test ", "")
@@ -58,16 +70,13 @@ def append_json(csv_dict, json_path):
 
 
 def write_to_csv(result_dir, csv_path):
-    with open(csv_path, "w", newline="") as csv_file:
-        colnames = column_names()
-        writer = csv.DictWriter(csv_file, fieldnames=colnames)
+    colnames = column_names()
 
-        csv_dict = {col: [] for col in colnames}
-        jplist = glob.glob(osjoin(result_dir, "**/properties.json"), recursive=True)
-        for json_path in jplist:
-            append_json(csv_dict, json_path)
-        max_rows = len(csv_dict["run"])
+    csv_dict = {col: [] for col in colnames}
+    jplist = glob.glob(osjoin(result_dir, "**/properties.json"), recursive=True)
+    for json_path in jplist:
+        append_json(csv_dict, json_path)
 
-        writer.writeheader()
-        for i in range(max_rows):
-            writer.writerow({col: csv_dict[col][i] for col in colnames})
+    df = pd.DataFrame(csv_dict)
+    df.to_csv(csv_path, header=True, index=False)
+    max_rows = len(csv_dict["run"])

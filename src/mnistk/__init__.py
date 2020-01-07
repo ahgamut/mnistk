@@ -9,3 +9,4 @@
 """
 from mnistk.run import *
 from mnistk.collect import write_to_csv
+from mnistk.display.overview import get_application

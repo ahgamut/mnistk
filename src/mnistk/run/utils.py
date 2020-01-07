@@ -17,20 +17,30 @@ import os
 import json
 
 try:
-    import torchviz
+    import torchrec
 except Exception as e:
-    print("No torchviz, can't visualize network")
+    print("No torchrec, can't visualize network")
 
 
 def plot_structure(net, input_shapes, directory, fmt="svg", writer=None):
     try:
-        g, rec = torchviz.make_dot(net, input_shapes, render_depth=1)
+        rec = torchrec.record(net, input_shapes, name=net.__class__.__name__)
+        g = torchrec.make_dot(rec, render_depth=1)
         g.format = fmt
         g.render(filename="network", directory=directory, view=False, cleanup=True)
         return rec
     except Exception as e:
         print(e)
         print("Unable to Visualize Network!!")
+
+
+def op_count(rec):
+    count = 0
+    for fn in rec.node_set:
+        if "Backward" in fn.__class__.__name__ and fn is rec.nodes[fn].fn:
+            # checking fn because there are dummy ops in the recorder
+            count += 1
+    return count
 
 
 # TODO: A better measure of memory <21-12-19> #
