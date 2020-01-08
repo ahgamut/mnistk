@@ -20,6 +20,21 @@ def lv(label, value, vlabel=None):
     return {"label": label, "value": "{}|{}".format(vlab, value)}
 
 
+def halved_div(func, div_string="", split=50):
+    div = html.Div(
+        children=[
+            html.Div(
+                div_string, style=dict(width="{}%".format(split), display="table-cell")
+            ),
+            html.Div(
+                func, style=dict(width="{}%".format(100 - split), display="table-cell")
+            ),
+        ],
+        style=dict(width="100%", display="table"),
+    )
+    return div
+
+
 def filter_options(df):
     filter_opts = []
     for (r, e), _ in df.groupby(["run", "epoch"]):
@@ -29,17 +44,19 @@ def filter_options(df):
         id="filter-options",
         options=filter_opts,
         multi=True,
-        value=default,
+        value=[],
         placeholder="Showing all runs; select run(s) here",
     )
-    return dropdown, default
+    div = halved_div(dropdown, "Select Run(s) to view:")
+    return div, default
 
 
 def grouping_options():
-    group_opts = [lv("Class", "groupname"), lv("Activation Used", "activation")]
+    group_opts = [lv("Network Style", "groupname"), lv("Activation Used", "activation")]
     default = group_opts[0]["value"]
     selector = dcc.RadioItems(id="grouping-options", options=group_opts, value=default)
-    return selector, default
+    div = halved_div(selector, "Group Networks By:")
+    return div, default
 
 
 def xvalue_options():
@@ -54,12 +71,13 @@ def xvalue_options():
     dropdown = dcc.Dropdown(
         id="perfx-dropdown", options=xval_opts, value=default, clearable=False
     )
-    return dropdown, default
+    div = halved_div(dropdown, "X-Axis Measures:")
+    return div, default
 
 
 def yvalue_options():
     yval_opts = (
-        [lv("Overall AUC", "AUC"), lv("Overall Accuracy", "accuracy")]
+        [lv("Overall Accuracy", "accuracy"), lv("Overall AUC", "AUC")]
         + [
             lv(
                 "{} pred. Accuracy".format(x),
@@ -82,7 +100,8 @@ def yvalue_options():
     dropdown = dcc.Dropdown(
         id="perfy-dropdown", options=yval_opts, value=default, clearable=False
     )
-    return dropdown, default
+    div = halved_div(dropdown, "Y-Axis Measures:")
+    return div, default
 
 
 def figure_handler_closure(df_full, **defaults):
@@ -130,40 +149,14 @@ def figure_handler_closure(df_full, **defaults):
     return fig, figure_handler
 
 
-def get_application(csv_path):
-    df = pd.read_csv(csv_path, header=0)
-    external_css = ["https://cdnjs.cloudflare.com/ajax/libs/tufte-css/1.7.2/tufte.css"]
-    app = dash.Dash("overview", external_stylesheets=external_css)
-    set_app_layout(df, app)
-    return app
-
-
-def set_app_layout(df, app):
+def plot_elements(df, app):
     x_select, x_default = xvalue_options()
     y_select, y_default = yvalue_options()
-    filt_select, filt_default = filter_options(df)
+    filt_select, _ = filter_options(df)
     gp_select, gp_default = grouping_options()
-
     fig, figure_handler = figure_handler_closure(
-        df,
-        filter_opt=filt_default,
-        group_opt=gp_default,
-        xval=x_default,
-        yval=y_default,
+        df, filter_opt=[], group_opt=gp_default, xval=x_default, yval=y_default
     )
-
-    app.layout = html.Div(
-        children=[
-            html.H1("Hello Dash"),
-            html.H2("View the performance of a thousand neural networks"),
-            filt_select,
-            gp_select,
-            x_select,
-            y_select,
-            fig,
-        ]
-    )
-
     app.callback(
         dd.Output(component_id="perf-graph", component_property="figure"),
         [
@@ -173,3 +166,35 @@ def set_app_layout(df, app):
             dd.Input(component_id="perfy-dropdown", component_property="value"),
         ],
     )(figure_handler)
+
+    layout = html.Div(
+        children=[
+            html.H2("View the performance of a thousand neural networks"),
+            fig,
+            gp_select,
+            x_select,
+            y_select,
+            filt_select,
+        ]
+    )
+    return layout
+
+
+def set_app_layout(df, app):
+    plot_layout = plot_elements(df, app)
+    app.layout = html.Div(
+        children=[
+            html.H1("mnistk - 1001 different networks on MNIST"),
+            html.Div("Some talk here about what this page is"),
+            plot_layout,
+        ]
+    )
+
+
+def get_application(csv_path):
+    df = pd.read_csv(csv_path, header=0)
+    external_css = ["https://cdnjs.cloudflare.com/ajax/libs/tufte-css/1.7.2/tufte.css"]
+    app = dash.Dash("overview", external_stylesheets=external_css)
+    app.config.suppress_callback_exceptions = True
+    set_app_layout(df, app)
+    return app

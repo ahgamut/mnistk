@@ -34,13 +34,17 @@ def plot_structure(net, input_shapes, directory, fmt="svg", writer=None):
         print("Unable to Visualize Network!!")
 
 
-def op_count(rec):
-    count = 0
+def layerop_count(rec):
+    opcount = 0
+    layercount = 0
     for fn in rec.node_set:
         if "Backward" in fn.__class__.__name__ and fn is rec.nodes[fn].fn:
             # checking fn because there are dummy ops in the recorder
-            count += 1
-    return count
+            opcount += 1
+        if fn is rec.nodes[fn].fn and hasattr(fn, "children"):
+            has_children = len(list(fn.children())) != 0
+            layercount += 0 if has_children else 1
+    return layercount, opcount
 
 
 # TODO: A better measure of memory <21-12-19> #

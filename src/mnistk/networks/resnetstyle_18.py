@@ -12,12 +12,13 @@ from torchvision.models.resnet import BasicBlock
 class ResNetStyle_18(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv2d(in_channels=1, out_channels=25, kernel_size=(20, 20), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f1 = BasicBlock(inplanes=25, planes=25)
-        self.f2 = nn.Conv2d(in_channels=25, out_channels=38, kernel_size=(3, 3), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f3 = nn.Conv2d(in_channels=38, out_channels=10, kernel_size=(7, 7), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f4 = nn.Linear(in_features=10, out_features=10, bias=False)
-        self.f5 = nn.LogSoftmax(dim=1)
+        self.f0 = nn.Conv2d(in_channels=1, out_channels=27, kernel_size=(11, 11), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f1 = BasicBlock(inplanes=27, planes=27)
+        self.f2 = BasicBlock(inplanes=27, planes=27)
+        self.f3 = BasicBlock(inplanes=27, planes=27)
+        self.f4 = nn.Conv2d(in_channels=27, out_channels=49, kernel_size=(2, 2), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f5 = nn.Linear(in_features=14161, out_features=10, bias=False)
+        self.f6 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -26,7 +27,8 @@ class ResNetStyle_18(nn.Module):
         x = self.f1(x)
         x = self.f2(x)
         x = self.f3(x)
-        x = x.view(x.shape[0],10)
         x = self.f4(x)
+        x = x.view(x.shape[0],14161)
         x = self.f5(x)
+        x = self.f6(x)
         return x
