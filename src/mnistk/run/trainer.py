@@ -78,6 +78,10 @@ class Trainer(object):
 
     def start_props(self):
         self.net_state["name"] = self.net.__class__.__name__
+        self.net_state["activation"] = "None"
+        for x in self.net.children():
+            if "activation" in x.__module__ and x.__class__.__name__ != "LogSoftmax":
+                self.net_state["activation"] = x.__class__.__name__
         self.net_state["#layers"] = len(list(self.net.children()))
         self.net_state["#params"] = sum(
             q.numel() for q in self.net.parameters(recurse=True) if q.requires_grad

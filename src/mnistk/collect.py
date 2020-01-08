@@ -18,8 +18,9 @@ def column_names():
     cols = (
         [
             "name",
-            "formname",
+            "activation",
             "groupname",
+            "formname",
             "run",
             "epoch",
             "#layers",
