@@ -12,10 +12,10 @@ from torchvision.models.resnet import BasicBlock
 class ResNetStyle_4(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv2d(in_channels=1, out_channels=44, kernel_size=(20, 20), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f1 = BasicBlock(inplanes=44, planes=44)
-        self.f2 = nn.Conv2d(in_channels=44, out_channels=51, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f3 = nn.Linear(in_features=1836, out_features=10, bias=True)
+        self.f0 = nn.Conv2d(in_channels=1, out_channels=19, kernel_size=(10, 10), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f1 = BasicBlock(inplanes=19, planes=19)
+        self.f2 = nn.Conv2d(in_channels=19, out_channels=45, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f3 = nn.Linear(in_features=16245, out_features=10, bias=False)
         self.f4 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
@@ -24,7 +24,7 @@ class ResNetStyle_4(nn.Module):
         x = self.f0(x)
         x = self.f1(x)
         x = self.f2(x)
-        x = x.view(x.shape[0],1836)
+        x = x.view(x.shape[0],16245)
         x = self.f3(x)
         x = self.f4(x)
         return x

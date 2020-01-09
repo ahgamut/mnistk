@@ -27,6 +27,9 @@ from mnistk.run.utils import (
 from mnistk.run.loss import LossFunc
 from mnistk.run.optimizer import get_optimizer
 
+torch.manual_seed(42)
+np.random.seed(42)
+
 
 class Trainer(object):
 
