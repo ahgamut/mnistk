@@ -18,6 +18,7 @@ setup(
         "torch",
         "torchvision",
         "scikit-learn",
+        "h5py",
     ],
     url="https://github.com/ahgamut/mnistk",
     package_dir={"": "src"},

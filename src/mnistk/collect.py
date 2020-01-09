@@ -8,7 +8,7 @@
     :copyright: (c) 2020 by Gautham Venkatasubramanian.
     :license: see LICENSE for more details.
 """
-from os.path import join as osjoin
+from os.path import join as osjoin, dirname
 import json
 import glob
 import pandas as pd
@@ -39,16 +39,19 @@ def column_names():
 
 
 def get_groupname(name):
+    for x in ["Conv1dThenLinear", "Conv2dThenLinear", "Conv3dThenLinear"]:
+        if x in name:
+            return x
     for x in ["Basic", "ResNet", "Conv1d", "Conv2d", "Conv3d", "Linear"]:
         if x in name:
             return x
     return name
 
 
-def append_json(csv_dict, json_path):
+def append_json(csv_dict, json_path, static_info):
     with open(json_path) as f:
         jdict = json.load(f)
-
+        jdict.update(static_info)
         for epoch in jdict["test loss"].keys():
             csv_dict["epoch"].append(int(epoch))
             csv_dict["formname"].append(jdict["name"].split("_")[0])
@@ -74,9 +77,15 @@ def write_to_csv(result_dir, csv_path):
     colnames = column_names()
 
     csv_dict = {col: [] for col in colnames}
-    jplist = glob.glob(osjoin(result_dir, "**/properties.json"), recursive=True)
-    for json_path in jplist:
-        append_json(csv_dict, json_path)
+    splist = glob.glob(osjoin(result_dir, "**/network.json"), recursive=True)
+    for static_path in splist:
+        with open(static_path, "r") as sf:
+            static_info = json.load(sf)
+            jplist = glob.glob(
+                osjoin(dirname(static_path), "**/properties.json"), recursive=True
+            )
+            for json_path in jplist:
+                append_json(csv_dict, json_path, static_info)
 
     df = pd.DataFrame(csv_dict)
     df.to_csv(csv_path, header=True, index=False)

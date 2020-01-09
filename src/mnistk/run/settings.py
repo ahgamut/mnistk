@@ -20,10 +20,9 @@ Settings = namedtuple(
         "test_batch_size",
         "hypers",
         "use_gpu",
-        "plot_structure",
+        "save_static_info",
         "save_predictions",
         "save_snapshot",
-        "plot_losses",
     ),
 )
 
@@ -33,7 +32,6 @@ Settings.__new__.__defaults__ = (
     10,
     10,
     dict(lr=0.001),
-    False,
     False,
     False,
     False,

@@ -10,7 +10,7 @@
 """
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, roc_auc_score
 import numpy as np
 import h5py
 import os
@@ -22,16 +22,19 @@ except Exception as e:
     print("No torchrec, can't visualize network")
 
 
-def plot_structure(net, input_shapes, directory, fmt="svg", writer=None):
+def get_recorder(net, input_shapes):
     try:
         rec = torchrec.record(net, input_shapes, name=net.__class__.__name__)
-        g = torchrec.make_dot(rec, render_depth=1)
-        g.format = fmt
-        g.render(filename="network", directory=directory, view=False, cleanup=True)
         return rec
     except Exception as e:
         print(e)
         print("Unable to Visualize Network!!")
+
+
+def plot_structure(rec, directory, fmt="svg"):
+    g = torchrec.make_dot(rec, render_depth=1)
+    g.format = fmt
+    g.render(filename="network", directory=directory, view=False, cleanup=True)
 
 
 def layerop_count(rec):
@@ -130,7 +133,7 @@ def plot_roc(axis, y_true, y_pred, i):
     return score
 
 
-def plot_images(epoch, img_tensors, pred_tensors, directory, writer=None):
+def plot_images(epoch, img_tensors, pred_tensors, directory):
     def clear_ticks(axis):
         axis.set_xticks([])
         axis.set_yticks([])
@@ -177,23 +180,32 @@ def plot_images(epoch, img_tensors, pred_tensors, directory, writer=None):
             )
             cax = fig.add_axes([0.85, 0.05, 0.03, 0.85])  # left bottom width height
             cb = fig.colorbar(mappable=mappables[0], cax=cax, ax=axs)
-            if writer is not None:
-                writer.add_figure(
-                    tag="predictions/{}/backprops".format(i),
-                    figure=fig,
-                    global_step=epoch,
-                    close=False,
-                )
-
             pdf.savefig(fig, dpi=300)
             plt.close()
         d = pdf.infodict()
         d["Title"] = "Gradients at Epoch {}".format(epoch)
 
 
-def plot_predictions(epoch, loss, y_true, y_pred, directory, writer=None):
+def get_classwise_preds(y_true, y_pred):
     aucs = []
-    accu = []
+    accus = []
+    pred_val = np.argmax(y_pred, axis=1)
+    yt = np.zeros(len(y_true), np.float32)
+    for i in range(10):
+        pred_i = pred_val[y_true == i]
+        accu = np.sum(pred_i == i) / len(pred_i)
+        yt *= 0
+        yt += y_true == i
+        auc = roc_auc_score(yt, y_pred[:, i])
+
+        accus.append(accu)
+        aucs.append(auc)
+    return aucs, accus
+
+
+def plot_predictions(epoch, loss, y_true, y_pred, directory):
+    aucs = []
+    accus = []
     preds = np.argmax(y_pred, axis=1)
     with PdfPages(os.path.join(directory, "test-{}.pdf".format(epoch))) as pdf:
         for i in range(10):
@@ -203,7 +215,7 @@ def plot_predictions(epoch, loss, y_true, y_pred, directory, writer=None):
             fig.suptitle("Network Predictions for {}".format(i))
 
             pred_check = preds[y_true == i]
-            accu.append(np.sum(pred_check == i) / len(pred_check))
+            accus.append(np.sum(pred_check == i) / len(pred_check))
 
             yt = np.int32(y_true == i)
             yp = y_pred[:, i]
@@ -211,32 +223,11 @@ def plot_predictions(epoch, loss, y_true, y_pred, directory, writer=None):
             plot_error_splits(ax[1], y_true, preds, i)
 
             pdf.savefig(fig, dpi=300)
-            if writer is not None:
-                writer.add_figure(
-                    tag="predictions/{}/spread".format(i),
-                    figure=fig,
-                    global_step=epoch,
-                    close=False,
-                )
-                writer.add_scalar(
-                    "predictions/{}/auc".format(i), aucs[-1], global_step=epoch
-                )
-                writer.add_scalar(
-                    "predictions/{}/accuracy".format(i), accu[-1], global_step=epoch
-                )
 
             plt.close()
         d = pdf.infodict()
         d["Title"] = "Predictions at Epoch {}".format(epoch)
-    if writer is not None:
-        writer.add_scalar(tag="overall_test/loss", scalar_value=loss, global_step=epoch)
-        writer.add_scalar(
-            tag="overall_test/auc", scalar_value=np.mean(aucs), global_step=epoch
-        )
-        writer.add_scalar(
-            tag="overall_test/accuracy", scalar_value=np.mean(accu), global_step=epoch
-        )
-    return aucs, accu
+    return aucs, accus
 
 
 def save_predictions(y_pred, directory, run_name, epoch):
@@ -250,6 +241,6 @@ def save_predictions(y_pred, directory, run_name, epoch):
             f.create_dataset(name, data=y_pred)
 
 
-def save_props(state, directory):
-    with open(os.path.join(directory, "properties.json"), "w") as f:
+def save_props(state, directory, filename="properties.json"):
+    with open(os.path.join(directory, filename), "w") as f:
         json.dump(state, f)

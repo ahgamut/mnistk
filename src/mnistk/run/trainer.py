@@ -12,20 +12,17 @@
 import sys, os
 import shutil
 import numpy as np
-import json
 import time
 import torch
-from torch.utils.tensorboard import SummaryWriter
 from mnistk.run import DataGen, construct
 from mnistk.run.utils import (
-    plot_structure,
-    plot_predictions,
-    save_props,
-    plot_losses,
-    save_predictions,
-    plot_images,
+    get_recorder,
     approx_mem_usage,
     layerop_count,
+    plot_structure,
+    get_classwise_preds,
+    save_props,
+    save_predictions,
 )
 from mnistk.run.loss import LossFunc
 from mnistk.run.optimizer import get_optimizer
@@ -52,15 +49,8 @@ class Trainer(object):
         self.loss_fn = LossFunc()
         self.optimizer = get_optimizer(**settings.hypers)(self.net.parameters())
 
-        self.net_state = dict()
         self.run_name = run_name
-        self.train_losses = []
-        self.samples = []
-        self.start_props()
-        self.class_samples()
-
         self._dest = os.path.join(dest, str(self.net.__class__.__name__).split(".")[-1])
-        self.run_dest = None
         runs = os.path.join(self._dest, "runs/")
         this_run = os.path.join(runs, run_name)
         if not os.path.exists(self._dest):
@@ -69,40 +59,24 @@ class Trainer(object):
             shutil.rmtree(this_run)
         os.makedirs(this_run)
         self.run_dest = this_run
-        self.writer = SummaryWriter(log_dir=this_run)
+        self.state_props()
 
     def summary(self):
         print("Destination Folder:", self._dest)
         print(self._settings)
         print("Network:\n\t", self.net)
 
-    def start_props(self):
-        self.net_state["name"] = self.net.__class__.__name__
-        self.net_state["#layers"] = len(list(self.net.children()))
-        self.net_state["#ops"] = 0
+    def state_props(self):
+        self.net_state = dict()
+        self.net_state["train loss"] = []
         self.net_state["run"] = self.run_name
         self.net_state["time per epoch"] = 0
-        self.net_state["memory per pass"] = 0
         self.net_state["test loss"] = {}
         self.net_state["test AUC"] = {}
         self.net_state["test accuracy"] = {}
 
-        self.net_state["activation"] = "None"
-        if "ResNet" in self.net.__class__.__name__:
-            self.net_state["activation"] = "ReLU"
-        else:
-            for x in self.net.children():
-                if (
-                    "activation" in x.__module__
-                    and x.__class__.__name__ != "LogSoftmax"
-                ):
-                    self.net_state["activation"] = x.__class__.__name__
-        self.net_state["#params"] = sum(
-            q.numel() for q in self.net.parameters(recurse=True) if q.requires_grad
-        )
-
     def train(self):
-        self.train_losses = []
+        self.net_state["train loss"] = []
         time_spent = []
         ep_start = None
 
@@ -119,17 +93,16 @@ class Trainer(object):
                 self.optimizer.step()
                 ep_losses.append(loss.item())
             time_spent.append(time.time() - ep_start)
-            loss = np.mean(ep_losses)
-            self.writer.add_scalar(tag="train/loss", scalar_value=loss, global_step=i)
-            self.train_losses.append(loss)
+            self.net_state["train loss"].append(np.mean(ep_losses))
             print(
-                "Epoch {:4}: Training Loss = {:1.3f}".format(i, loss), file=sys.stderr
+                "Epoch {:4}: Training Loss = {:1.3f}".format(
+                    i, self.net_state["train loss"][-1]
+                ),
+                file=sys.stderr,
             )
             if i % self._settings.test_every == 0:
                 self.test(epoch=i)
         self.net_state["time per epoch"] = np.mean(time_spent)
-
-        print("\n")
 
     def test(self, epoch):
         self.net.eval()
@@ -151,20 +124,17 @@ class Trainer(object):
 
         print("Epoch {:4}: Test Loss = {:1.3f}".format(epoch, loss))
         if self._settings.save_predictions:
-            aucs, accu = plot_predictions(
-                epoch, loss, trues, preds, self.run_dest, writer=self.writer
-            )
+            aucs, accus = get_classwise_preds(trues, preds)
             self.net_state["test loss"][epoch] = loss
             self.net_state["test AUC"][epoch] = aucs
-            self.net_state["test accuracy"][epoch] = accu
+            self.net_state["test accuracy"][epoch] = accus
             print(
                 "Epoch {:4}: Test Accuracy = {:2.1f}%".format(
-                    epoch, 100 * np.mean(accu)
+                    epoch, 100 * np.mean(accus)
                 ),
                 file=sys.stderr,
             )
             save_predictions(preds, self._dest, self.run_name, epoch)
-            plot_images(epoch, *self.get_backprops(), self.run_dest, writer=self.writer)
 
         if self._settings.save_snapshot:
             torch.save(
@@ -174,57 +144,37 @@ class Trainer(object):
 
         self.net.train()
 
-    def class_samples(self):
-        count = 0
-        samples = {}
-        test = self.datagen.test()
-        for xt, yt in test:
-            for i, y in enumerate(yt):
-                if samples.get(y.item(), None) is None:
-                    samples[y.item()] = (y, xt[i])
-                    count += 1
-            if count == 10:
-                break
-        self.samples = sorted(samples.items(), key=lambda x: x[0])
-        self.samples = [x[1] for x in self.samples]
-
-    def get_backprops(self):
-        inps = []
-        outs = []
-        for yp, xp in self.samples:
-            x, y_true = (
-                xp.unsqueeze(0).to(self.device),
-                yp.unsqueeze(0).to(self.device),
-            )
-            x.requires_grad_(True)
-            y_pred = self.net(x)
-            inps.append(x)
-            outs.append(y_pred)
-        return inps, outs
+    def save_static_props(self):
+        # save properties that are same across all runs
+        static_info = dict()
+        static_info["name"] = self.net.__class__.__name__
+        static_info["#layers"] = len(list(self.net.children()))
+        static_info["#ops"] = 0
+        static_info["memory per pass"] = 0
+        static_info["activation"] = "None"
+        if "ResNet" in self.net.__class__.__name__:
+            static_info["activation"] = "ReLU"
+        else:
+            for x in self.net.children():
+                if (
+                    "activation" in x.__module__
+                    and x.__class__.__name__ != "LogSoftmax"
+                ):
+                    static_info["activation"] = x.__class__.__name__
+        static_info["#params"] = sum(
+            q.numel() for q in self.net.parameters(recurse=True) if q.requires_grad
+        )
+        rec = get_recorder(self.net.cpu(), tuple([1] + list(self.net.in_shape)))
+        if rec is not None:
+            print("Plotting Network structure as SVG...", file=sys.stderr)
+            plot_structure(rec, directory=self._dest, fmt="svg")
+            static_info["#ops"], static_info["#layers"] = layerop_count(rec)
+            static_info["memory per pass"] = approx_mem_usage(rec)
+            del rec
+        save_props(static_info, self._dest, "network.json")
 
     def save(self):
-        self.net_state["train loss"] = self.train_losses
-        self.writer.add_graph(
-            model=self.net, input_to_model=(self.samples[0][1].unsqueeze(0),)
-        )
-
-        if self._settings.plot_structure:
-            print("Plotting Network structure as SVG...", file=sys.stderr)
-            rec = plot_structure(
-                self.net,
-                tuple([1] + list(self.net.in_shape)),
-                directory=self._dest,
-                fmt="svg",
-            )
-            if rec is not None:
-                self.net_state["#ops"], self.net_state["#layers"] = layerop_count(rec)
-                self.net_state["memory per pass"] = approx_mem_usage(rec)
-                del rec
-        if self._settings.plot_losses:
-            print("Plotting training losses...", file=sys.stderr)
-            plot_losses(
-                self.net_state["train loss"], self.net_state["test loss"], self.run_dest
-            )
-
         print("Saving properties...", file=sys.stderr)
+        if self._settings.save_static_info:
+            self.save_static_props()
         save_props(self.net_state, self.run_dest)

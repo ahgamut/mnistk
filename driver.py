@@ -20,6 +20,27 @@ def main():
     "-i",
     "--id",
     "id_",
+    prompt="ID of the network",
+    type=int,
+    default=0,
+    show_default=True,
+)
+def show(id_):
+    """
+    Show the structure of the network with the given ID
+    """
+    if id_ < 0 or id_ > 1000:
+        print("invalid value")
+    else:
+        net = mnistk.networks.NET_LIST[id_]()
+        print(net)
+
+
+@main.command()
+@click.option(
+    "-i",
+    "--id",
+    "id_",
     prompt="ID of the network to run",
     type=int,
     default=0,
