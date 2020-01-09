@@ -11,16 +11,17 @@ from torch import nn
 class LinearSigmoid_25(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=125, bias=True)
-        self.f1 = nn.Linear(in_features=125, out_features=69, bias=False)
+        self.f0 = nn.Linear(in_features=784, out_features=69, bias=False)
+        self.f1 = nn.Linear(in_features=69, out_features=54, bias=True)
         self.f2 = nn.Sigmoid()
-        self.f3 = nn.Linear(in_features=69, out_features=45, bias=False)
+        self.f3 = nn.Linear(in_features=54, out_features=38, bias=False)
         self.f4 = nn.Sigmoid()
-        self.f5 = nn.Linear(in_features=45, out_features=13, bias=False)
-        self.f6 = nn.Linear(in_features=13, out_features=12, bias=False)
-        self.f7 = nn.Sigmoid()
-        self.f8 = nn.Linear(in_features=12, out_features=10, bias=True)
-        self.f9 = nn.LogSoftmax(dim=1)
+        self.f5 = nn.Linear(in_features=38, out_features=10, bias=False)
+        self.f6 = nn.Sigmoid()
+        self.f7 = nn.Linear(in_features=10, out_features=10, bias=False)
+        self.f8 = nn.Sigmoid()
+        self.f9 = nn.Linear(in_features=10, out_features=10, bias=False)
+        self.f10 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -35,4 +36,5 @@ class LinearSigmoid_25(nn.Module):
         x = self.f7(x)
         x = self.f8(x)
         x = self.f9(x)
+        x = self.f10(x)
         return x

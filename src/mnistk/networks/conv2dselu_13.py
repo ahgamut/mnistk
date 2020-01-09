@@ -11,13 +11,13 @@ from torch import nn
 class Conv2dSELU_13(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=(25, 25), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f0 = nn.Conv2d(in_channels=1, out_channels=14, kernel_size=(17, 17), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
         self.f1 = nn.SELU(inplace=False)
-        self.f2 = nn.Conv2d(in_channels=32, out_channels=44, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f2 = nn.Conv2d(in_channels=14, out_channels=43, kernel_size=(8, 8), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f3 = nn.SELU(inplace=False)
-        self.f4 = nn.Conv2d(in_channels=44, out_channels=56, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f4 = nn.Conv2d(in_channels=43, out_channels=55, kernel_size=(2, 2), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f5 = nn.SELU(inplace=False)
-        self.f6 = nn.Conv2d(in_channels=56, out_channels=10, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f6 = nn.Conv2d(in_channels=55, out_channels=10, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f7 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

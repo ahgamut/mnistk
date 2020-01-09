@@ -11,11 +11,11 @@ from torch import nn
 class Conv1dBias_17(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv1d(in_channels=16, out_channels=15, kernel_size=(18,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
-        self.f1 = nn.Conv1d(in_channels=15, out_channels=10, kernel_size=(31,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
-        self.f2 = nn.Conv1d(in_channels=10, out_channels=54, kernel_size=(2,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
-        self.f3 = nn.Conv1d(in_channels=54, out_channels=53, kernel_size=(1,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
-        self.f4 = nn.Conv1d(in_channels=53, out_channels=10, kernel_size=(1,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
+        self.f0 = nn.Conv1d(in_channels=16, out_channels=64, kernel_size=(25,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
+        self.f1 = nn.Conv1d(in_channels=64, out_channels=61, kernel_size=(20,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
+        self.f2 = nn.Conv1d(in_channels=61, out_channels=60, kernel_size=(3,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
+        self.f3 = nn.Conv1d(in_channels=60, out_channels=22, kernel_size=(3,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
+        self.f4 = nn.Conv1d(in_channels=22, out_channels=10, kernel_size=(2,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
         self.f5 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

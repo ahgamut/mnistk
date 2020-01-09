@@ -12,13 +12,13 @@ class Conv3dReLU_21(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
         self.f0 = nn.Conv3d(in_channels=1, out_channels=49, kernel_size=(6, 6, 6), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f1 = nn.Conv3d(in_channels=49, out_channels=56, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f2 = nn.ReLU(inplace=False)
-        self.f3 = nn.Conv3d(in_channels=56, out_channels=59, kernel_size=(2, 2, 2), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f4 = nn.Conv3d(in_channels=59, out_channels=12, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f5 = nn.Conv3d(in_channels=12, out_channels=24, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f1 = nn.Conv3d(in_channels=49, out_channels=51, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f2 = nn.Conv3d(in_channels=51, out_channels=37, kernel_size=(2, 2, 2), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f3 = nn.Conv3d(in_channels=37, out_channels=17, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f4 = nn.ReLU(inplace=False)
+        self.f5 = nn.Conv3d(in_channels=17, out_channels=39, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f6 = nn.ReLU(inplace=False)
-        self.f7 = nn.Conv3d(in_channels=24, out_channels=10, kernel_size=(10, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f7 = nn.Conv3d(in_channels=39, out_channels=10, kernel_size=(10, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f8 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

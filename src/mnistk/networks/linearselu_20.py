@@ -11,14 +11,13 @@ from torch import nn
 class LinearSELU_20(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=96, bias=False)
-        self.f1 = nn.SELU(inplace=False)
-        self.f2 = nn.Linear(in_features=96, out_features=94, bias=False)
-        self.f3 = nn.Linear(in_features=94, out_features=53, bias=False)
-        self.f4 = nn.Linear(in_features=53, out_features=26, bias=False)
-        self.f5 = nn.SELU(inplace=False)
-        self.f6 = nn.Linear(in_features=26, out_features=10, bias=True)
-        self.f7 = nn.LogSoftmax(dim=1)
+        self.f0 = nn.Linear(in_features=784, out_features=111, bias=False)
+        self.f1 = nn.Linear(in_features=111, out_features=56, bias=True)
+        self.f2 = nn.Linear(in_features=56, out_features=20, bias=False)
+        self.f3 = nn.SELU(inplace=False)
+        self.f4 = nn.Linear(in_features=20, out_features=16, bias=False)
+        self.f5 = nn.Linear(in_features=16, out_features=10, bias=True)
+        self.f6 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -30,5 +29,4 @@ class LinearSELU_20(nn.Module):
         x = self.f4(x)
         x = self.f5(x)
         x = self.f6(x)
-        x = self.f7(x)
         return x

@@ -11,9 +11,9 @@ from torch import nn
 class Conv1dBias_8(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv1d(in_channels=16, out_channels=21, kernel_size=(29,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
-        self.f1 = nn.Conv1d(in_channels=21, out_channels=37, kernel_size=(15,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
-        self.f2 = nn.Conv1d(in_channels=37, out_channels=10, kernel_size=(7,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
+        self.f0 = nn.Conv1d(in_channels=16, out_channels=48, kernel_size=(10,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
+        self.f1 = nn.Conv1d(in_channels=48, out_channels=57, kernel_size=(21,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
+        self.f2 = nn.Conv1d(in_channels=57, out_channels=10, kernel_size=(20,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
         self.f3 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

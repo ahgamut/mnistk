@@ -11,14 +11,14 @@ from torch import nn
 class Conv2dTanh_17(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv2d(in_channels=1, out_channels=56, kernel_size=(23, 23), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f1 = nn.Conv2d(in_channels=56, out_channels=42, kernel_size=(6, 6), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f0 = nn.Conv2d(in_channels=1, out_channels=34, kernel_size=(7, 7), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f1 = nn.Conv2d(in_channels=34, out_channels=24, kernel_size=(3, 3), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f2 = nn.Tanh()
-        self.f3 = nn.Conv2d(in_channels=42, out_channels=35, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f3 = nn.Conv2d(in_channels=24, out_channels=54, kernel_size=(16, 16), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
         self.f4 = nn.Tanh()
-        self.f5 = nn.Conv2d(in_channels=35, out_channels=51, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f5 = nn.Conv2d(in_channels=54, out_channels=24, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f6 = nn.Tanh()
-        self.f7 = nn.Conv2d(in_channels=51, out_channels=10, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f7 = nn.Conv2d(in_channels=24, out_channels=10, kernel_size=(2, 2), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f8 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

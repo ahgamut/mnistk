@@ -11,16 +11,15 @@ from torch import nn
 class Conv3dSigmoid_17(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv3d(in_channels=1, out_channels=33, kernel_size=(2, 2, 2), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f0 = nn.Conv3d(in_channels=1, out_channels=41, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
         self.f1 = nn.Sigmoid()
-        self.f2 = nn.Conv3d(in_channels=33, out_channels=30, kernel_size=(5, 5, 5), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f3 = nn.Sigmoid()
-        self.f4 = nn.Conv3d(in_channels=30, out_channels=46, kernel_size=(2, 2, 2), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f5 = nn.Sigmoid()
-        self.f6 = nn.Conv3d(in_channels=46, out_channels=60, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f7 = nn.Sigmoid()
-        self.f8 = nn.Conv3d(in_channels=60, out_channels=10, kernel_size=(10, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f9 = nn.LogSoftmax(dim=1)
+        self.f2 = nn.Conv3d(in_channels=41, out_channels=47, kernel_size=(6, 6, 6), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f3 = nn.Conv3d(in_channels=47, out_channels=51, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f4 = nn.Sigmoid()
+        self.f5 = nn.Conv3d(in_channels=51, out_channels=27, kernel_size=(2, 2, 2), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f6 = nn.Sigmoid()
+        self.f7 = nn.Conv3d(in_channels=27, out_channels=10, kernel_size=(10, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f8 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -33,7 +32,6 @@ class Conv3dSigmoid_17(nn.Module):
         x = self.f5(x)
         x = self.f6(x)
         x = self.f7(x)
-        x = self.f8(x)
         x = x.view(x.shape[0],10)
-        x = self.f9(x)
+        x = self.f8(x)
         return x

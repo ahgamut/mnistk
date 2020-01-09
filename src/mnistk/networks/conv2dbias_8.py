@@ -11,9 +11,9 @@ from torch import nn
 class Conv2dBias_8(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv2d(in_channels=1, out_channels=61, kernel_size=(21, 21), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f1 = nn.Conv2d(in_channels=61, out_channels=64, kernel_size=(2, 2), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f2 = nn.Conv2d(in_channels=64, out_channels=10, kernel_size=(7, 7), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f0 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=(24, 24), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f1 = nn.Conv2d(in_channels=32, out_channels=28, kernel_size=(3, 3), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f2 = nn.Conv2d(in_channels=28, out_channels=10, kernel_size=(3, 3), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f3 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

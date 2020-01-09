@@ -11,10 +11,10 @@ from torch import nn
 class LinearBias_14(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=110, bias=True)
-        self.f1 = nn.Linear(in_features=110, out_features=19, bias=False)
-        self.f2 = nn.Linear(in_features=19, out_features=16, bias=False)
-        self.f3 = nn.Linear(in_features=16, out_features=10, bias=True)
+        self.f0 = nn.Linear(in_features=784, out_features=120, bias=False)
+        self.f1 = nn.Linear(in_features=120, out_features=13, bias=True)
+        self.f2 = nn.Linear(in_features=13, out_features=11, bias=True)
+        self.f3 = nn.Linear(in_features=11, out_features=10, bias=False)
         self.f4 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

@@ -11,9 +11,9 @@ from torch import nn
 class LinearSigmoid_2(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=44, bias=False)
+        self.f0 = nn.Linear(in_features=784, out_features=51, bias=True)
         self.f1 = nn.Sigmoid()
-        self.f2 = nn.Linear(in_features=44, out_features=10, bias=False)
+        self.f2 = nn.Linear(in_features=51, out_features=10, bias=True)
         self.f3 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

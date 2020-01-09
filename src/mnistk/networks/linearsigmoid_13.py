@@ -11,13 +11,12 @@ from torch import nn
 class LinearSigmoid_13(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=70, bias=False)
-        self.f1 = nn.Sigmoid()
-        self.f2 = nn.Linear(in_features=70, out_features=50, bias=False)
+        self.f0 = nn.Linear(in_features=784, out_features=22, bias=True)
+        self.f1 = nn.Linear(in_features=22, out_features=11, bias=True)
+        self.f2 = nn.Linear(in_features=11, out_features=10, bias=False)
         self.f3 = nn.Sigmoid()
-        self.f4 = nn.Linear(in_features=50, out_features=17, bias=True)
-        self.f5 = nn.Linear(in_features=17, out_features=10, bias=True)
-        self.f6 = nn.LogSoftmax(dim=1)
+        self.f4 = nn.Linear(in_features=10, out_features=10, bias=True)
+        self.f5 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -28,5 +27,4 @@ class LinearSigmoid_13(nn.Module):
         x = self.f3(x)
         x = self.f4(x)
         x = self.f5(x)
-        x = self.f6(x)
         return x

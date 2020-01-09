@@ -11,15 +11,15 @@ from torch import nn
 class LinearReLU_24(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=74, bias=False)
-        self.f1 = nn.Linear(in_features=74, out_features=14, bias=True)
-        self.f2 = nn.ReLU(inplace=False)
-        self.f3 = nn.Linear(in_features=14, out_features=13, bias=False)
-        self.f4 = nn.Linear(in_features=13, out_features=10, bias=True)
+        self.f0 = nn.Linear(in_features=784, out_features=125, bias=False)
+        self.f1 = nn.ReLU(inplace=False)
+        self.f2 = nn.Linear(in_features=125, out_features=32, bias=True)
+        self.f3 = nn.ReLU(inplace=False)
+        self.f4 = nn.Linear(in_features=32, out_features=21, bias=True)
         self.f5 = nn.ReLU(inplace=False)
-        self.f6 = nn.Linear(in_features=10, out_features=10, bias=False)
-        self.f7 = nn.ReLU(inplace=False)
-        self.f8 = nn.Linear(in_features=10, out_features=10, bias=True)
+        self.f6 = nn.Linear(in_features=21, out_features=11, bias=True)
+        self.f7 = nn.Linear(in_features=11, out_features=10, bias=False)
+        self.f8 = nn.Linear(in_features=10, out_features=10, bias=False)
         self.f9 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

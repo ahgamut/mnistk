@@ -11,12 +11,12 @@ from torch import nn
 class Conv3dReLU_12(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv3d(in_channels=1, out_channels=27, kernel_size=(4, 4, 4), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f0 = nn.Conv3d(in_channels=1, out_channels=46, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f1 = nn.ReLU(inplace=False)
-        self.f2 = nn.Conv3d(in_channels=27, out_channels=38, kernel_size=(2, 2, 2), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f3 = nn.Conv3d(in_channels=38, out_channels=62, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f2 = nn.Conv3d(in_channels=46, out_channels=53, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f3 = nn.Conv3d(in_channels=53, out_channels=11, kernel_size=(4, 4, 4), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f4 = nn.ReLU(inplace=False)
-        self.f5 = nn.Conv3d(in_channels=62, out_channels=10, kernel_size=(12, 3, 3), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f5 = nn.Conv3d(in_channels=11, out_channels=10, kernel_size=(13, 4, 4), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
         self.f6 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

@@ -11,11 +11,11 @@ from torch import nn
 class LinearReLU_7(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=21, bias=True)
+        self.f0 = nn.Linear(in_features=784, out_features=46, bias=True)
         self.f1 = nn.ReLU(inplace=False)
-        self.f2 = nn.Linear(in_features=21, out_features=20, bias=False)
+        self.f2 = nn.Linear(in_features=46, out_features=39, bias=True)
         self.f3 = nn.ReLU(inplace=False)
-        self.f4 = nn.Linear(in_features=20, out_features=10, bias=True)
+        self.f4 = nn.Linear(in_features=39, out_features=10, bias=False)
         self.f5 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

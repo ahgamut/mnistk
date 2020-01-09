@@ -11,25 +11,15 @@ from torch import nn
 class Conv1dThenLinear_19(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv1d(in_channels=16, out_channels=31, kernel_size=(37,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
-        self.f1 = nn.Linear(in_features=403, out_features=110, bias=False)
-        self.f2 = nn.Linear(in_features=110, out_features=70, bias=True)
-        self.f3 = nn.SELU(inplace=False)
-        self.f4 = nn.Linear(in_features=70, out_features=52, bias=False)
-        self.f5 = nn.SELU(inplace=False)
-        self.f6 = nn.Linear(in_features=52, out_features=10, bias=False)
-        self.f7 = nn.LogSoftmax(dim=1)
+        self.f0 = nn.Conv1d(in_channels=16, out_channels=12, kernel_size=(15,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
+        self.f1 = nn.Linear(in_features=420, out_features=10, bias=False)
+        self.f2 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
         x = x.view(x.shape[0],16,49)
         x = self.f0(x)
-        x = x.view(x.shape[0],403)
+        x = x.view(x.shape[0],420)
         x = self.f1(x)
         x = self.f2(x)
-        x = self.f3(x)
-        x = self.f4(x)
-        x = self.f5(x)
-        x = self.f6(x)
-        x = self.f7(x)
         return x

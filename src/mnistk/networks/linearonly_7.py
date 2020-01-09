@@ -11,9 +11,9 @@ from torch import nn
 class LinearOnly_7(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=59, bias=False)
-        self.f1 = nn.Linear(in_features=59, out_features=58, bias=False)
-        self.f2 = nn.Linear(in_features=58, out_features=10, bias=False)
+        self.f0 = nn.Linear(in_features=784, out_features=110, bias=False)
+        self.f1 = nn.Linear(in_features=110, out_features=46, bias=False)
+        self.f2 = nn.Linear(in_features=46, out_features=10, bias=False)
         self.f3 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

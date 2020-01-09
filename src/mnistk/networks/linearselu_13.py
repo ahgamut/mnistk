@@ -12,13 +12,12 @@ class LinearSELU_13(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
         self.f0 = nn.Linear(in_features=784, out_features=67, bias=False)
-        self.f1 = nn.SELU(inplace=False)
-        self.f2 = nn.Linear(in_features=67, out_features=36, bias=False)
-        self.f3 = nn.SELU(inplace=False)
-        self.f4 = nn.Linear(in_features=36, out_features=11, bias=False)
-        self.f5 = nn.SELU(inplace=False)
-        self.f6 = nn.Linear(in_features=11, out_features=10, bias=True)
-        self.f7 = nn.LogSoftmax(dim=1)
+        self.f1 = nn.Linear(in_features=67, out_features=42, bias=False)
+        self.f2 = nn.SELU(inplace=False)
+        self.f3 = nn.Linear(in_features=42, out_features=20, bias=False)
+        self.f4 = nn.SELU(inplace=False)
+        self.f5 = nn.Linear(in_features=20, out_features=10, bias=False)
+        self.f6 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -30,5 +29,4 @@ class LinearSELU_13(nn.Module):
         x = self.f4(x)
         x = self.f5(x)
         x = self.f6(x)
-        x = self.f7(x)
         return x

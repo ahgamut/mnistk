@@ -11,14 +11,16 @@ from torch import nn
 class Conv1dSELU_17(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv1d(in_channels=16, out_channels=21, kernel_size=(21,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
+        self.f0 = nn.Conv1d(in_channels=16, out_channels=25, kernel_size=(47,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=True, padding_mode='zeros')
         self.f1 = nn.SELU(inplace=False)
-        self.f2 = nn.Conv1d(in_channels=21, out_channels=63, kernel_size=(25,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
-        self.f3 = nn.Conv1d(in_channels=63, out_channels=30, kernel_size=(3,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
-        self.f4 = nn.SELU(inplace=False)
-        self.f5 = nn.Conv1d(in_channels=30, out_channels=18, kernel_size=(3,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
-        self.f6 = nn.Conv1d(in_channels=18, out_channels=10, kernel_size=(1,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
-        self.f7 = nn.LogSoftmax(dim=1)
+        self.f2 = nn.Conv1d(in_channels=25, out_channels=50, kernel_size=(3,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
+        self.f3 = nn.SELU(inplace=False)
+        self.f4 = nn.Conv1d(in_channels=50, out_channels=35, kernel_size=(1,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
+        self.f5 = nn.SELU(inplace=False)
+        self.f6 = nn.Conv1d(in_channels=35, out_channels=13, kernel_size=(1,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
+        self.f7 = nn.SELU(inplace=False)
+        self.f8 = nn.Conv1d(in_channels=13, out_channels=10, kernel_size=(1,), stride=(1,), padding=(0,), dilation=(1,), groups=1, bias=False, padding_mode='zeros')
+        self.f9 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -30,6 +32,8 @@ class Conv1dSELU_17(nn.Module):
         x = self.f4(x)
         x = self.f5(x)
         x = self.f6(x)
-        x = x.view(x.shape[0],10)
         x = self.f7(x)
+        x = self.f8(x)
+        x = x.view(x.shape[0],10)
+        x = self.f9(x)
         return x

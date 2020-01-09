@@ -11,12 +11,12 @@ from torch import nn
 class LinearReLU_12(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=119, bias=True)
-        self.f1 = nn.Linear(in_features=119, out_features=64, bias=False)
+        self.f0 = nn.Linear(in_features=784, out_features=90, bias=True)
+        self.f1 = nn.Linear(in_features=90, out_features=35, bias=True)
         self.f2 = nn.ReLU(inplace=False)
-        self.f3 = nn.Linear(in_features=64, out_features=64, bias=False)
+        self.f3 = nn.Linear(in_features=35, out_features=13, bias=True)
         self.f4 = nn.ReLU(inplace=False)
-        self.f5 = nn.Linear(in_features=64, out_features=10, bias=False)
+        self.f5 = nn.Linear(in_features=13, out_features=10, bias=False)
         self.f6 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

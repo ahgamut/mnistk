@@ -11,14 +11,14 @@ from torch import nn
 class Conv2dSigmoid_19(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv2d(in_channels=1, out_channels=44, kernel_size=(14, 14), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f1 = nn.Conv2d(in_channels=44, out_channels=29, kernel_size=(12, 12), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f2 = nn.Sigmoid()
-        self.f3 = nn.Conv2d(in_channels=29, out_channels=57, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f4 = nn.Sigmoid()
-        self.f5 = nn.Conv2d(in_channels=57, out_channels=26, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f6 = nn.Sigmoid()
-        self.f7 = nn.Conv2d(in_channels=26, out_channels=10, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f0 = nn.Conv2d(in_channels=1, out_channels=45, kernel_size=(3, 3), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f1 = nn.Sigmoid()
+        self.f2 = nn.Conv2d(in_channels=45, out_channels=57, kernel_size=(5, 5), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f3 = nn.Sigmoid()
+        self.f4 = nn.Conv2d(in_channels=57, out_channels=24, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f5 = nn.Sigmoid()
+        self.f6 = nn.Conv2d(in_channels=24, out_channels=10, kernel_size=(17, 17), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f7 = nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(3, 3), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f8 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

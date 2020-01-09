@@ -11,18 +11,17 @@ from torch import nn
 class LinearTanh_22(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=87, bias=False)
+        self.f0 = nn.Linear(in_features=784, out_features=70, bias=True)
         self.f1 = nn.Tanh()
-        self.f2 = nn.Linear(in_features=87, out_features=41, bias=False)
-        self.f3 = nn.Tanh()
-        self.f4 = nn.Linear(in_features=41, out_features=19, bias=False)
-        self.f5 = nn.Tanh()
-        self.f6 = nn.Linear(in_features=19, out_features=14, bias=False)
-        self.f7 = nn.Tanh()
-        self.f8 = nn.Linear(in_features=14, out_features=10, bias=False)
-        self.f9 = nn.Tanh()
-        self.f10 = nn.Linear(in_features=10, out_features=10, bias=False)
-        self.f11 = nn.LogSoftmax(dim=1)
+        self.f2 = nn.Linear(in_features=70, out_features=39, bias=True)
+        self.f3 = nn.Linear(in_features=39, out_features=36, bias=False)
+        self.f4 = nn.Tanh()
+        self.f5 = nn.Linear(in_features=36, out_features=33, bias=False)
+        self.f6 = nn.Tanh()
+        self.f7 = nn.Linear(in_features=33, out_features=18, bias=False)
+        self.f8 = nn.Tanh()
+        self.f9 = nn.Linear(in_features=18, out_features=10, bias=True)
+        self.f10 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -38,5 +37,4 @@ class LinearTanh_22(nn.Module):
         x = self.f8(x)
         x = self.f9(x)
         x = self.f10(x)
-        x = self.f11(x)
         return x

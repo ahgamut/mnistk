@@ -11,12 +11,12 @@ from torch import nn
 class Conv3dSigmoid_12(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv3d(in_channels=1, out_channels=61, kernel_size=(4, 4, 4), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f1 = nn.Conv3d(in_channels=61, out_channels=26, kernel_size=(2, 2, 2), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f2 = nn.Sigmoid()
-        self.f3 = nn.Conv3d(in_channels=26, out_channels=20, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f4 = nn.Sigmoid()
-        self.f5 = nn.Conv3d(in_channels=20, out_channels=10, kernel_size=(10, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f0 = nn.Conv3d(in_channels=1, out_channels=32, kernel_size=(2, 2, 2), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f1 = nn.Sigmoid()
+        self.f2 = nn.Conv3d(in_channels=32, out_channels=30, kernel_size=(4, 4, 4), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f3 = nn.Sigmoid()
+        self.f4 = nn.Conv3d(in_channels=30, out_channels=40, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f5 = nn.Conv3d(in_channels=40, out_channels=10, kernel_size=(12, 3, 3), stride=(1, 1, 1), padding=(0, 0, 0), dilation=(1, 1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f6 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

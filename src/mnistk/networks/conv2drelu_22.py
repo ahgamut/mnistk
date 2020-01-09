@@ -11,18 +11,16 @@ from torch import nn
 class Conv2dReLU_22(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv2d(in_channels=1, out_channels=30, kernel_size=(5, 5), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f0 = nn.Conv2d(in_channels=1, out_channels=25, kernel_size=(11, 11), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
         self.f1 = nn.ReLU(inplace=False)
-        self.f2 = nn.Conv2d(in_channels=30, out_channels=59, kernel_size=(6, 6), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f2 = nn.Conv2d(in_channels=25, out_channels=31, kernel_size=(2, 2), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f3 = nn.ReLU(inplace=False)
-        self.f4 = nn.Conv2d(in_channels=59, out_channels=32, kernel_size=(13, 13), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f5 = nn.ReLU(inplace=False)
-        self.f6 = nn.Conv2d(in_channels=32, out_channels=31, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f7 = nn.ReLU(inplace=False)
-        self.f8 = nn.Conv2d(in_channels=31, out_channels=51, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f9 = nn.ReLU(inplace=False)
-        self.f10 = nn.Conv2d(in_channels=51, out_channels=10, kernel_size=(4, 4), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f11 = nn.LogSoftmax(dim=1)
+        self.f4 = nn.Conv2d(in_channels=31, out_channels=48, kernel_size=(11, 11), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f5 = nn.Conv2d(in_channels=48, out_channels=28, kernel_size=(5, 5), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f6 = nn.ReLU(inplace=False)
+        self.f7 = nn.Conv2d(in_channels=28, out_channels=62, kernel_size=(2, 2), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f8 = nn.Conv2d(in_channels=62, out_channels=10, kernel_size=(2, 2), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f9 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -36,8 +34,6 @@ class Conv2dReLU_22(nn.Module):
         x = self.f6(x)
         x = self.f7(x)
         x = self.f8(x)
-        x = self.f9(x)
-        x = self.f10(x)
         x = x.view(x.shape[0],10)
-        x = self.f11(x)
+        x = self.f9(x)
         return x

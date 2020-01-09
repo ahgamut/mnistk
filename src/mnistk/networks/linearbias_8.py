@@ -11,9 +11,9 @@ from torch import nn
 class LinearBias_8(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=88, bias=True)
-        self.f1 = nn.Linear(in_features=88, out_features=73, bias=False)
-        self.f2 = nn.Linear(in_features=73, out_features=10, bias=False)
+        self.f0 = nn.Linear(in_features=784, out_features=103, bias=False)
+        self.f1 = nn.Linear(in_features=103, out_features=65, bias=True)
+        self.f2 = nn.Linear(in_features=65, out_features=10, bias=True)
         self.f3 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

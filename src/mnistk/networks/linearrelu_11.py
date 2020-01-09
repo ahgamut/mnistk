@@ -11,13 +11,14 @@ from torch import nn
 class LinearReLU_11(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=18, bias=False)
+        self.f0 = nn.Linear(in_features=784, out_features=92, bias=True)
         self.f1 = nn.ReLU(inplace=False)
-        self.f2 = nn.Linear(in_features=18, out_features=16, bias=False)
-        self.f3 = nn.Linear(in_features=16, out_features=10, bias=True)
-        self.f4 = nn.ReLU(inplace=False)
-        self.f5 = nn.Linear(in_features=10, out_features=10, bias=False)
-        self.f6 = nn.LogSoftmax(dim=1)
+        self.f2 = nn.Linear(in_features=92, out_features=42, bias=False)
+        self.f3 = nn.ReLU(inplace=False)
+        self.f4 = nn.Linear(in_features=42, out_features=14, bias=False)
+        self.f5 = nn.ReLU(inplace=False)
+        self.f6 = nn.Linear(in_features=14, out_features=10, bias=True)
+        self.f7 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -29,4 +30,5 @@ class LinearReLU_11(nn.Module):
         x = self.f4(x)
         x = self.f5(x)
         x = self.f6(x)
+        x = self.f7(x)
         return x

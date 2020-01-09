@@ -11,14 +11,12 @@ from torch import nn
 class Conv2dReLU_13(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Conv2d(in_channels=1, out_channels=60, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f0 = nn.Conv2d(in_channels=1, out_channels=23, kernel_size=(2, 2), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
         self.f1 = nn.ReLU(inplace=False)
-        self.f2 = nn.Conv2d(in_channels=60, out_channels=40, kernel_size=(19, 19), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f3 = nn.ReLU(inplace=False)
-        self.f4 = nn.Conv2d(in_channels=40, out_channels=25, kernel_size=(5, 5), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
-        self.f5 = nn.ReLU(inplace=False)
-        self.f6 = nn.Conv2d(in_channels=25, out_channels=10, kernel_size=(6, 6), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
-        self.f7 = nn.LogSoftmax(dim=1)
+        self.f2 = nn.Conv2d(in_channels=23, out_channels=58, kernel_size=(14, 14), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=True, padding_mode='zeros')
+        self.f3 = nn.Conv2d(in_channels=58, out_channels=54, kernel_size=(12, 12), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f4 = nn.Conv2d(in_channels=54, out_channels=10, kernel_size=(3, 3), stride=(1, 1), padding=(0, 0), dilation=(1, 1), groups=1, bias=False, padding_mode='zeros')
+        self.f5 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
         x = inputs[0]
@@ -28,8 +26,6 @@ class Conv2dReLU_13(nn.Module):
         x = self.f2(x)
         x = self.f3(x)
         x = self.f4(x)
-        x = self.f5(x)
-        x = self.f6(x)
         x = x.view(x.shape[0],10)
-        x = self.f7(x)
+        x = self.f5(x)
         return x

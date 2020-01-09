@@ -11,9 +11,9 @@ from torch import nn
 class LinearReLU_4(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=118, bias=True)
+        self.f0 = nn.Linear(in_features=784, out_features=101, bias=True)
         self.f1 = nn.ReLU(inplace=False)
-        self.f2 = nn.Linear(in_features=118, out_features=10, bias=True)
+        self.f2 = nn.Linear(in_features=101, out_features=10, bias=True)
         self.f3 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):

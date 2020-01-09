@@ -11,11 +11,11 @@ from torch import nn
 class LinearOnly_19(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.f0 = nn.Linear(in_features=784, out_features=86, bias=False)
-        self.f1 = nn.Linear(in_features=86, out_features=48, bias=False)
-        self.f2 = nn.Linear(in_features=48, out_features=34, bias=False)
-        self.f3 = nn.Linear(in_features=34, out_features=12, bias=False)
-        self.f4 = nn.Linear(in_features=12, out_features=10, bias=False)
+        self.f0 = nn.Linear(in_features=784, out_features=92, bias=False)
+        self.f1 = nn.Linear(in_features=92, out_features=25, bias=False)
+        self.f2 = nn.Linear(in_features=25, out_features=18, bias=False)
+        self.f3 = nn.Linear(in_features=18, out_features=16, bias=False)
+        self.f4 = nn.Linear(in_features=16, out_features=10, bias=False)
         self.f5 = nn.LogSoftmax(dim=1)
 
     def forward(self, *inputs):
