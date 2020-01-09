@@ -13,11 +13,11 @@ setup(
     long_description=readme_txt,
     install_requires=[
         "numpy",
+        "matplotlib",
         "click",
         "torch",
         "torchvision",
         "scikit-learn",
-        "dash==1.7.0",
     ],
     url="https://github.com/ahgamut/mnistk",
     package_dir={"": "src"},

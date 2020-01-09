@@ -67,22 +67,5 @@ def collect(result_dir, csv_path):
     mnistk.write_to_csv(result_dir, csv_path)
 
 
-@main.command()
-@click.argument(
-    "result_dir",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
-)
-@click.argument(
-    "csv_path", type=click.Path(resolve_path=True, file_okay=True, dir_okay=False)
-)
-def view(result_dir, csv_path):
-    """
-    View results in a Dash webapp
-    """
-    click.echo("Dash app should boot ...")
-    app = mnistk.get_application(csv_path)
-    app.run_server(debug=True, dev_tools_hot_reload=False)
-
-
 if __name__ == "__main__":
     main()
