@@ -10,3 +10,4 @@ from .settings import Settings
 from .datagen import DataGen
 from .network import construct
 from .trainer import Trainer
+from .tester import Tester

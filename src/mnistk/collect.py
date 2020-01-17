@@ -106,25 +106,26 @@ def split_predictions(pred_path):
     if isfile(pred_path):
         with h5py.File(pred_path, "r") as apf:
             for k1 in apf.keys():
-                for k2 in apf[k1].keys():
-                    snap_pred = osjoin(
-                        dirname(pred_path), "runs/{}/predictions-{}.h5".format(k1, k2)
-                    )
-                    with h5py.File(snap_pred, "w") as snapf:
-                        ds = apf[k1][k2]
+                snap_pred = osjoin(
+                    dirname(pred_path), "runs/{}/predictions.h5".format(k1)
+                )
+                with h5py.File(snap_pred, "w") as snapf:
+                    for k2 in apf[k1].keys():
+                        ds = np.array(apf[k1][k2])
                         dsp = np.argmax(ds, axis=1)
-                        snapf.create_dataset("preds", data=dsp)
-                        snapf.create_dataset("scores", data=ds)
+                        snapf.create_dataset("/{}/preds".format(k2), data=dsp)
+                        snapf.create_dataset("/{}/scores".format(k2), data=ds)
         remove(pred_path)
 
 
 def update_exam(main_dir, exam_arr):
     split_predictions(osjoin(main_dir, "predictions.h5"))
-    predlist = glob.glob(osjoin(main_dir, "**/predictions-*.h5"), recursive=True)
+    predlist = glob.glob(osjoin(main_dir, "runs/**/predictions.h5"), recursive=True)
     for path in predlist:
         with h5py.File(path, "r") as pf:
-            preds = pf.get("preds")
-            exam_arr[range(len(preds)), preds] += 1
+            for grp in pf.values():
+                preds = grp.get("preds")
+                exam_arr[range(len(preds)), preds] += 1
 
 
 def save_exam_scores(result_dir):
@@ -200,10 +201,11 @@ def save_rankings(result_dir):
 
         for json_path in jplist:
             json_dir, jdict = get_jdict(json_path)
+            ans_dict = dict()
             for ep in jdict["test accuracy"].keys():
                 epi = int(ep)
-                ans_dict = get_ranks(
+                ans_dict[ep] = get_ranks(
                     sdict["name"], jdict["run"], epi, ["time"] + desc_cols
                 )
-                with open(osjoin(json_dir, "rankings-{}.json".format(epi)), "w") as f:
-                    json.dump(ans_dict, f)
+            with open(osjoin(json_dir, "rankings.json"), "w") as f:
+                json.dump(ans_dict, f)
