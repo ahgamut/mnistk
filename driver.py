@@ -74,18 +74,17 @@ def run(id_, name, params, dest):
     "result_dir",
     type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
 )
-@click.argument(
-    "csv_path", type=click.Path(resolve_path=True, file_okay=True, dir_okay=False)
-)
-def collect(result_dir, csv_path):
+def collect(result_dir):
     """
-    Collect results from JSON in subfolders into a single CSV
+    Collect results from subfolders into a single CSV,
+    and create rank-based data for each result
 
     :result_dir: Subdirectories of this directory contain the required JSON\n
-    :csv_path: Path+filename of CSV to save\n
+    the generated file(s) will be stored at the top level of this directory.
     """
-    click.echo("Collecting results from JSONs to CSV ...")
-    mnistk.write_to_csv(result_dir, csv_path)
+    mnistk.write_to_csv(result_dir)
+    mnistk.save_exam_scores(result_dir)
+    mnistk.save_rankings(result_dir)
 
 
 if __name__ == "__main__":

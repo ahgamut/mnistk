@@ -8,4 +8,4 @@
     :license: see LICENSE for more details.
 """
 from mnistk.run import *
-from mnistk.collect import write_to_csv
+from mnistk.collect import write_to_csv, save_exam_scores, save_rankings
