@@ -50,31 +50,42 @@ def get_groupname(name):
     return name
 
 
-def append_json(csv_dict, json_path, static_info):
+def get_records(jdict):
+    records = []
+    for epoch in jdict["test loss"].keys():
+        record = {}
+        record["epoch"] = int(epoch)
+        record["formname"] = jdict["name"].split("_")[0]
+        record["groupname"] = get_groupname(jdict["name"])
+        for k, v in jdict.items():
+            if k in ["test AUC", "test accuracy"]:
+                modkey = k.replace("test ", "")
+                record[modkey] = sum(jdict[k][epoch]) / 10
+                for x in range(10):
+                    record["{}_{}".format(modkey, x)] = jdict[k][epoch][x]
+            elif k == "test loss":
+                modkey = k.replace("test ", "")
+                record[modkey] = jdict[k][epoch]
+            elif k == "time per epoch":
+                record["time"] = jdict[k] * int(epoch)
+            elif k == "train loss":
+                continue
+            else:
+                record[k] = jdict[k]
+        for rnk in ["rank", "rank_gp", "rank_form", "rank_snap"]:
+            record[rnk] = 0
+        records.append(record)
+    return records
+
+
+def append_records(csv_dict, json_path, static_info):
     with open(json_path) as f:
         jdict = json.load(f)
         jdict.update(static_info)
-        for epoch in jdict["test loss"].keys():
-            csv_dict["epoch"].append(int(epoch))
-            csv_dict["formname"].append(jdict["name"].split("_")[0])
-            csv_dict["groupname"].append(get_groupname(jdict["name"]))
-            for k, v in jdict.items():
-                if k in ["test AUC", "test accuracy"]:
-                    modkey = k.replace("test ", "")
-                    csv_dict[modkey].append(sum(jdict[k][epoch]) / 10)
-                    for x in range(10):
-                        csv_dict["{}_{}".format(modkey, x)].append(jdict[k][epoch][x])
-                elif k == "test loss":
-                    modkey = k.replace("test ", "")
-                    csv_dict[modkey].append(jdict[k][epoch])
-                elif k == "time per epoch":
-                    csv_dict["time"].append(jdict[k] * int(epoch))
-                elif k == "train loss":
-                    continue
-                else:
-                    csv_dict[k].append(jdict[k])
-            for rnk in ["rank", "rank_gp", "rank_form", "rank_snap"]:
-                csv_dict[rnk].append(0)
+        records = get_records(jdict)
+        for record in records:
+            for k, v in record.items():
+                csv_dict[k].append(v)
 
 
 def write_to_csv(result_dir):
@@ -90,7 +101,7 @@ def write_to_csv(result_dir):
                 osjoin(dirname(static_path), "**/properties.json"), recursive=True
             )
             for json_path in jplist:
-                append_json(csv_dict, json_path, static_info)
+                append_records(csv_dict, json_path, static_info)
 
     df = pd.DataFrame(csv_dict)
     df["rank"] = df["accuracy"].rank(method="min", ascending=False)
@@ -162,10 +173,21 @@ def save_rankings(result_dir):
         v["name"] = main_df["name"]
         v["run"] = main_df["run"]
         v["epoch"] = main_df["epoch"]
+        v["out of"] = 0
         if ranking_group[k] == "":
             df2 = main_df
+            v["out of"] = len(main_df)
         else:
             df2 = main_df.groupby(ranking_group[k])
+            t = main_df[ranking_group[k]]
+            if isinstance(ranking_group[k], str):
+                v["out of"] = main_df[ranking_group[k]].apply(
+                    lambda x: len(df2.get_group(x))
+                )
+            else:
+                v["out of"] = main_df[ranking_group[k]].apply(
+                    lambda x: len(df2.get_group(tuple(x))), axis=1
+                )
         for asc_col in asc_cols:
             v[asc_col] = df2[asc_col].rank(method="dense", ascending=True)
         for desc_col in desc_cols:
@@ -175,14 +197,19 @@ def save_rankings(result_dir):
         ans2 = pd.DataFrame(
             index=["global", "in_group", "in_form", "in_run"], columns=cols
         )
-        onerow = lambda _df: _df[
-            (_df["name"] == name) & (_df["run"] == run) & (_df["epoch"] == epoch)
-        ][cols].iloc[0]
-        ans2.loc["global"] = onerow(ranking_dfs["rank"])
-        ans2.loc["in_group"] = onerow(ranking_dfs["rank_gp"])
-        ans2.loc["in_form"] = onerow(ranking_dfs["rank_form"])
-        ans2.loc["in_run"] = onerow(ranking_dfs["rank_snap"])
-        return ans2.to_dict("split")
+
+        def onerow(key):
+            _df = ranking_dfs[key]
+            _df2 = _df[
+                (_df["name"] == name) & (_df["run"] == run) & (_df["epoch"] == epoch)
+            ]
+            return _df2[cols].iloc[0]
+
+        ans2.loc["global"] = onerow("rank")
+        ans2.loc["in_group"] = onerow("rank_gp")
+        ans2.loc["in_form"] = onerow("rank_form")
+        ans2.loc["in_run"] = onerow("rank_snap")
+        return ans2.T.to_dict("split")
 
     def get_jdict(path):
         with open(path, "r") as jfile:
@@ -196,7 +223,7 @@ def save_rankings(result_dir):
             osjoin(dirname(static_path), "**/properties.json"), recursive=True
         )
         with open(osjoin(static_dir, "rankings.json"), "w") as sf:
-            stat_dict = get_ranks(sdict["name"], "t1", 1, asc_cols[:-1])
+            stat_dict = get_ranks(sdict["name"], "t1", 1, asc_cols[:-1] + ["out of"])
             json.dump(stat_dict, sf)
 
         for json_path in jplist:
@@ -205,7 +232,7 @@ def save_rankings(result_dir):
             for ep in jdict["test accuracy"].keys():
                 epi = int(ep)
                 ans_dict[ep] = get_ranks(
-                    sdict["name"], jdict["run"], epi, ["time"] + desc_cols
+                    sdict["name"], jdict["run"], epi, ["time"] + desc_cols + ["out of"]
                 )
             with open(osjoin(json_dir, "rankings.json"), "w") as f:
                 json.dump(ans_dict, f)
