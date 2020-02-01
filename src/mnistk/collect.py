@@ -198,49 +198,38 @@ def save_rankings(result_dir):
         for desc_col in desc_cols:
             v[desc_col] = df2[desc_col].rank(method="dense", ascending=False)
 
-    def get_ranks(name, run, epoch, cols):
-        ans2 = pd.DataFrame(
-            index=["global", "in_group", "in_form", "in_run"], columns=cols
-        )
+    write_dict = {
+        "rank": "global",
+        "rank_gp": "in_group",
+        "rank_form": "in_form",
+        "rank_snap": "in_run",
+    }
+    stat_df = pd.DataFrame(
+        index=list(write_dict.values()),
+        columns=asc_cols[:-1] + ["out of"],
+        dtype=np.int32,
+    )
+    dyn_df = pd.DataFrame(
+        index=list(write_dict.values()),
+        columns=["time"] + desc_cols + ["out of"],
+        dtype=np.int32,
+    )
 
-        def onerow(key):
-            _df = ranking_dfs[key]
-            _df2 = _df[
-                (_df["name"] == name) & (_df["run"] == run) & (_df["epoch"] == epoch)
-            ]
-            return _df2[cols].iloc[0]
+    def get_ranks(df1, rownum):
+        for k, v in write_dict.items():
+            df1.loc[v] = ranking_dfs[k].loc[rownum, df1.columns]
+        return df1.astype(np.int32).T.to_dict("split")
 
-        ans2.loc["global"] = onerow("rank")
-        ans2.loc["in_group"] = onerow("rank_gp")
-        ans2.loc["in_form"] = onerow("rank_form")
-        ans2.loc["in_run"] = onerow("rank_snap")
-        return ans2.T.to_dict("split")
-
-    def get_record_dict(path):
-        with open(path, "r") as jfile:
-            _record_dict = json.load(jfile, cls=NDArrayDecoder)
-        return dirname(path), _record_dict
-
-    splist = glob.glob(osjoin(result_dir, "**/network.json"), recursive=True)
-    for static_path in splist:
-        static_dir, sdict = get_record_dict(static_path)
-        jplist = glob.glob(
-            osjoin(dirname(static_path), "**/properties.json"), recursive=True
-        )
-        with open(osjoin(static_dir, "rankings.json"), "w") as sf:
-            stat_dict = get_ranks(sdict["name"], "t1", 1, asc_cols[:-1] + ["out of"])
+    rdf = ranking_dfs["rank"]
+    for i in range(0, len(rdf), 4):
+        stat_dict = get_ranks(stat_df, i)
+        record_dict = {
+            int(rdf.loc[i + j, "epoch"]): get_ranks(dyn_df, i + j) for j in range(4)
+        }
+        with open(osjoin(result_dir, rdf["name"][i], "rankings.json"), "w") as sf:
             json.dump(stat_dict, sf, cls=NDArrayEncoder)
-
-        for record_path in jplist:
-            record_dir, record_dict = get_record_dict(record_path)
-            ans_dict = dict()
-            for ep in record_dict["test accuracy"].keys():
-                epi = int(ep)
-                ans_dict[ep] = get_ranks(
-                    sdict["name"],
-                    record_dict["run"],
-                    epi,
-                    ["time"] + desc_cols + ["out of"],
-                )
-            with open(osjoin(record_dir, "rankings.json"), "w") as f:
-                json.dump(ans_dict, f, cls=NDArrayEncoder)
+        with open(
+            osjoin(result_dir, rdf["name"][i], "runs", rdf["run"][i], "rankings.json"),
+            "w",
+        ) as rf:
+            json.dump(record_dict, rf, cls=NDArrayEncoder)
