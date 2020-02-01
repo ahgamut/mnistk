@@ -16,6 +16,8 @@ import glob
 import pandas as pd
 import numpy as np
 import h5py
+from mnistk import NDArrayDecoder, NDArrayEncoder
+from mnistk.run.utils import save_props
 
 
 def column_names(sortable=False, static=False):
@@ -50,42 +52,45 @@ def get_groupname(name):
     return name
 
 
-def get_records(jdict):
+def get_records(record_dict):
     records = []
-    for epoch in jdict["test loss"].keys():
+    for epoch in record_dict["test loss"].keys():
         record = {}
         record["epoch"] = int(epoch)
-        record["formname"] = jdict["name"].split("_")[0]
-        record["groupname"] = get_groupname(jdict["name"])
-        for k, v in jdict.items():
+        record["formname"] = record_dict["name"].split("_")[0]
+        record["groupname"] = get_groupname(record_dict["name"])
+        for k, v in record_dict.items():
             if k in ["test AUC", "test accuracy"]:
                 modkey = k.replace("test ", "")
-                record[modkey] = sum(jdict[k][epoch]) / 10
+                record[modkey] = record_dict[k][epoch].mean().tolist()
                 for x in range(10):
-                    record["{}_{}".format(modkey, x)] = jdict[k][epoch][x]
+                    record["{}_{}".format(modkey, x)] = record_dict[k][epoch][
+                        x
+                    ].tolist()
             elif k == "test loss":
                 modkey = k.replace("test ", "")
-                record[modkey] = jdict[k][epoch]
+                record[modkey] = record_dict[k][epoch]
             elif k == "time per epoch":
-                record["time"] = jdict[k] * int(epoch)
+                record["time"] = record_dict[k] * int(epoch)
             elif k == "train loss":
                 continue
             else:
-                record[k] = jdict[k]
+                record[k] = record_dict[k]
         for rnk in ["rank", "rank_gp", "rank_form", "rank_snap"]:
             record[rnk] = 0
         records.append(record)
     return records
 
 
-def append_records(csv_dict, json_path, static_info):
-    with open(json_path) as f:
-        jdict = json.load(f)
-        jdict.update(static_info)
-        records = get_records(jdict)
-        for record in records:
-            for k, v in record.items():
-                csv_dict[k].append(v)
+def append_records(csv_dict, record_path, static_info):
+    with open(record_path, "r") as f:
+        record_dict = json.load(f, cls=NDArrayDecoder)
+    save_props(record_dict, dirname(record_path))
+    record_dict.update(static_info)
+    records = get_records(record_dict)
+    for record in records:
+        for k, v in record.items():
+            csv_dict[k].append(v)
 
 
 def write_to_csv(result_dir):
@@ -96,12 +101,12 @@ def write_to_csv(result_dir):
     splist = glob.glob(osjoin(result_dir, "**/network.json"), recursive=True)
     for static_path in splist:
         with open(static_path, "r") as sf:
-            static_info = json.load(sf)
+            static_info = json.load(sf, cls=NDArrayDecoder)
             jplist = glob.glob(
                 osjoin(dirname(static_path), "**/properties.json"), recursive=True
             )
-            for json_path in jplist:
-                append_records(csv_dict, json_path, static_info)
+            for record_path in jplist:
+                append_records(csv_dict, record_path, static_info)
 
     df = pd.DataFrame(csv_dict)
     df["rank"] = df["accuracy"].rank(method="min", ascending=False)
@@ -211,28 +216,31 @@ def save_rankings(result_dir):
         ans2.loc["in_run"] = onerow("rank_snap")
         return ans2.T.to_dict("split")
 
-    def get_jdict(path):
+    def get_record_dict(path):
         with open(path, "r") as jfile:
-            _jdict = json.load(jfile)
-        return dirname(path), _jdict
+            _record_dict = json.load(jfile, cls=NDArrayDecoder)
+        return dirname(path), _record_dict
 
     splist = glob.glob(osjoin(result_dir, "**/network.json"), recursive=True)
     for static_path in splist:
-        static_dir, sdict = get_jdict(static_path)
+        static_dir, sdict = get_record_dict(static_path)
         jplist = glob.glob(
             osjoin(dirname(static_path), "**/properties.json"), recursive=True
         )
         with open(osjoin(static_dir, "rankings.json"), "w") as sf:
             stat_dict = get_ranks(sdict["name"], "t1", 1, asc_cols[:-1] + ["out of"])
-            json.dump(stat_dict, sf)
+            json.dump(stat_dict, sf, cls=NDArrayEncoder)
 
-        for json_path in jplist:
-            json_dir, jdict = get_jdict(json_path)
+        for record_path in jplist:
+            record_dir, record_dict = get_record_dict(record_path)
             ans_dict = dict()
-            for ep in jdict["test accuracy"].keys():
+            for ep in record_dict["test accuracy"].keys():
                 epi = int(ep)
                 ans_dict[ep] = get_ranks(
-                    sdict["name"], jdict["run"], epi, ["time"] + desc_cols + ["out of"]
+                    sdict["name"],
+                    record_dict["run"],
+                    epi,
+                    ["time"] + desc_cols + ["out of"],
                 )
-            with open(osjoin(json_dir, "rankings.json"), "w") as f:
-                json.dump(ans_dict, f)
+            with open(osjoin(record_dir, "rankings.json"), "w") as f:
+                json.dump(ans_dict, f, cls=NDArrayEncoder)

@@ -15,11 +15,45 @@ import numpy as np
 import h5py
 import os
 import json
+import base64
 
 try:
     import torchrec
 except Exception as e:
     print("No torchrec, can't visualize network")
+
+
+class NDArrayEncoder(json.JSONEncoder):
+    """JSON encoder for numpy ndarrays"""
+
+    # https://stackoverflow.com/questions/27909658/json-encoder-and-decoder-for-complex-numpy-arrays
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return {
+                "shape": obj.shape,
+                "data": base64.b64encode(obj.data).decode("utf-8"),
+                "dtype": str(obj.dtype),
+            }
+        return json.JSONEncoder.default(self, obj)
+
+
+def ndarray_hook(obj):
+    if not isinstance(obj, dict):
+        return obj
+    keys = list(obj.keys())
+    if "shape" in keys and "data" in keys:
+        return np.reshape(
+            np.frombuffer(base64.b64decode(obj["data"]), dtype=obj["dtype"]),
+            obj["shape"],
+        )
+    return obj
+
+
+class NDArrayDecoder(json.JSONDecoder):
+    """JSON Decoder for numpy ndarrays"""
+
+    def __init__(self, **kwargs):
+        super(NDArrayDecoder, self).__init__(object_hook=ndarray_hook, **kwargs)
 
 
 def get_recorder(net, input_shapes):
@@ -187,8 +221,8 @@ def plot_images(epoch, img_tensors, pred_tensors, directory):
 
 
 def get_classwise_preds(y_true, y_pred):
-    aucs = []
-    accus = []
+    aucs = np.zeros(10, dtype=np.float32)
+    accus = np.zeros(10, dtype=np.float32)
     pred_val = np.argmax(y_pred, axis=1)
     yt = np.zeros(len(y_true), np.float32)
     for i in range(10):
@@ -198,8 +232,8 @@ def get_classwise_preds(y_true, y_pred):
         yt += y_true == i
         auc = roc_auc_score(yt, y_pred[:, i])
 
-        accus.append(accu)
-        aucs.append(auc)
+        accus[i] = accu
+        aucs[i] = auc
     return aucs, accus
 
 
@@ -241,6 +275,14 @@ def save_predictions(y_pred, directory, run_name, epoch):
             f.create_dataset(name, data=y_pred)
 
 
-def save_props(state, directory, filename="properties.json"):
+def save_props(record_dict, directory, filename="properties.json"):
+    record_dict["train loss"] = np.array(record_dict["train loss"], dtype=np.float32)
+    for k in record_dict["test accuracy"].keys():
+        record_dict["test accuracy"][k] = np.array(
+            record_dict["test accuracy"][k], dtype=np.float32
+        )
+        record_dict["test AUC"][k] = np.array(
+            record_dict["test AUC"][k], dtype=np.float32
+        )
     with open(os.path.join(directory, filename), "w") as f:
-        json.dump(state, f)
+        json.dump(record_dict, f, cls=NDArrayEncoder)
