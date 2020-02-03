@@ -1,8 +1,7 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
-helpfile = open("README.md", "r")
-readme_txt = helpfile.read()
-helpfile.close()
+with open("README.md", "r") as helpfile:
+    readme_txt = helpfile.read()
 
 setup(
     name="mnistk",
@@ -11,6 +10,7 @@ setup(
     author_email="ahgamut@gmail.com",
     description="neural nets on the mnist dataset",
     long_description=readme_txt,
+    long_description_content_type="text/markdown",
     install_requires=[
         "numpy",
         "matplotlib",
@@ -20,7 +20,9 @@ setup(
         "scikit-learn",
         "h5py",
         "pandas",
+        "torchrec",
     ],
     url="https://github.com/ahgamut/mnistk",
     package_dir={"": "src"},
+    packages=find_packages("src"),
 )
