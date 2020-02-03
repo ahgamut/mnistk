@@ -8,7 +8,7 @@
     :copyright: (c) 2020 by Gautham Venkatasubramanian.
     :license: see LICENSE for more details.
 """
-from os.path import join as osjoin, dirname, isfile
+from os.path import join as osjoin, dirname, isfile, abspath
 from os import remove
 from torchvision.datasets import MNIST
 import json
@@ -18,6 +18,7 @@ import numpy as np
 import h5py
 from mnistk import NDArrayDecoder, NDArrayEncoder
 from mnistk.run.utils import save_props
+import sqlalchemy as sa
 
 
 def column_names(sortable=False, static=False):
@@ -116,6 +117,13 @@ def write_to_csv(result_dir):
         "dense", ascending=False
     )
     df.to_csv(csv_path, header=True, index=False)
+    write_to_sqldb(df, result_dir)
+
+
+def write_to_sqldb(df, result_dir):
+    print("Saving summary.csv as a SQL db")
+    engine = sa.create_engine("sqlite:///{}".format(osjoin(result_dir, "summary.db")))
+    df.to_sql("summary", engine, index=False, if_exists="replace")
 
 
 def split_predictions(pred_path):
@@ -233,3 +241,12 @@ def save_rankings(result_dir):
             "w",
         ) as rf:
             json.dump(record_dict, rf, cls=NDArrayEncoder)
+
+    engine = sa.create_engine("sqlite:///{}".format(osjoin(result_dir, "rankings.db")))
+    for k, v in ranking_dfs.items():
+        v.to_csv(
+            osjoin(result_dir, "rankings_{}.csv".format(write_dict[k])),
+            header=True,
+            index=False,
+        )
+        v.to_sql(write_dict[k], engine, index=False, if_exists="replace")

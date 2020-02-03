@@ -74,12 +74,11 @@ def plot_structure(rec, directory, fmt="svg"):
 def layerop_count(rec):
     opcount = 0
     layercount = 0
-    for fn in rec.node_set:
-        if "Backward" in fn.__class__.__name__ and fn is rec.nodes[fn].fn:
-            # checking fn because there are dummy ops in the recorder
+    for node in set(rec.nodes.values()):
+        if type(node).__name__ == "OpNode":
             opcount += 1
-        if fn is rec.nodes[fn].fn and hasattr(fn, "children"):
-            has_children = len(list(fn.children())) != 0
+        if hasattr(node.fn, "children"):
+            has_children = len(list(node.fn.children())) != 0
             layercount += 0 if has_children else 1
     return layercount, opcount
 
@@ -87,14 +86,9 @@ def layerop_count(rec):
 # TODO: A better measure of memory <21-12-19> #
 def approx_mem_usage(rec):
     mem = 0
-    for n in rec.nodes.values():
-        n.duplicates = 0
-    for fn in rec.node_set:
-        rec.nodes[fn].duplicates += 1
-    ans = list([rec.nodes[x] for x in rec.node_set if x is not None])
-    for n in ans:
-        if hasattr(n.fn, "size"):
-            mem += n.fn.numel() / n.duplicates
+    for n in set(rec.nodes.values()):
+        if hasattr(n.fn, "size") and "Tensor" in type(n).__name__:
+            mem += n.fn.numel()
     return mem
 
 

@@ -171,7 +171,7 @@ class Trainer(object):
         if rec is not None:
             print("Plotting Network structure as SVG...", file=sys.stderr)
             plot_structure(rec, directory=self._dest, fmt="svg")
-            static_info["#ops"], static_info["#layers"] = layerop_count(rec)
+            static_info["#layers"], static_info["#ops"] = layerop_count(rec)
             static_info["memory per pass"] = approx_mem_usage(rec)
             del rec
         save_props(static_info, self._dest, "network.json")
