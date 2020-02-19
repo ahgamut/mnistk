@@ -20,7 +20,7 @@ setup(
         "scikit-learn==0.20.3",
         "h5py==2.10.0",
         "pandas==0.24.2",
-        "Pillow==5.4.1",
+        "Pillow==6.2.0",
         "torchrec",
     ],
     url="https://github.com/ahgamut/mnistk",
