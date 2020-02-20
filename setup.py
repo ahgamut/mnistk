@@ -13,7 +13,6 @@ setup(
     long_description_content_type="text/markdown",
     install_requires=[
         "numpy>=1.17.2",
-        "matplotlib==3.0.3",
         "click==7.0",
         "torch>=1.3.0",
         "torchvision>=0.4.1",

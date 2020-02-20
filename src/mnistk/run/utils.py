@@ -8,8 +8,6 @@
     :copyright: (c) 2019 by Gautham Venkatasubramanian.
     :license: see LICENSE for more details.
 """
-from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from sklearn.metrics import roc_curve, auc, roc_auc_score
 import numpy as np
 import h5py
@@ -92,19 +90,6 @@ def approx_mem_usage(rec):
     return mem
 
 
-def plot_losses(train_losses, test_losses, directory):
-    losses = np.array(train_losses)
-    fig, ax = plt.subplots(1)
-    ax.plot(np.arange(1, len(losses) + 1), losses, "r.-", label="train")
-    ax.plot(list(test_losses.keys()), list(test_losses.values()), "bo--", label="test")
-    ax.set_xlabel("Epochs")
-    ax.set_ylabel("Loss")
-    ax.set_xticks(np.arange(1, len(losses) + 1))
-    ax.legend()
-    fig.savefig(os.path.join(directory, "loss.pdf"), dpi=300)
-    plt.close()
-
-
 def plot_error_splits(axis, y_true, y_pred, i):
     js = np.array([x for x in range(10)])
     width = 0.25
@@ -150,70 +135,6 @@ def plot_error_splits(axis, y_true, y_pred, i):
     axis.legend()
 
 
-def plot_roc(axis, y_true, y_pred, i):
-    fpr, tpr, _ = roc_curve(y_true, y_pred)
-    score = auc(fpr, tpr)
-    axis.plot(fpr, tpr, color="#00FF00FF", label="AUC = {:.6f}".format(score))
-    axis.set_ylabel("True Positive Rate")
-    axis.set_xlabel("False Positive Rate")
-    axis.set_title("ROC for Predicting {}".format(i))
-    axis.legend()
-    return score
-
-
-def plot_images(epoch, img_tensors, pred_tensors, directory):
-    def clear_ticks(axis):
-        axis.set_xticks([])
-        axis.set_yticks([])
-
-    def img(axis, z):
-        clear_ticks(axis)
-        z2, _, _ = nrm(z)
-        return axis.imshow(z2, cmap="gray_r", vmin=z2.min(), vmax=z2.max())
-
-    def bprop(axis, z, n, **kwargs):
-        clear_ticks(axis)
-        axis.set_title("pred = {}".format(n))
-        return axis.imshow(z, cmap="RdBu_r", **kwargs)
-
-    def nrm(z):
-        z2 = z.detach().cpu().numpy()[0, 0, :, :]
-        return z2, z2.min(), z2.max()
-
-    with PdfPages(os.path.join(directory, "rf-{}.pdf".format(epoch))) as pdf:
-        for i in range(10):
-            fig = plt.figure(figsize=(10, 6))
-            gsp = fig.add_gridspec(nrows=3, ncols=5)
-            axs = list(fig.add_subplot(gsp[0, i]) for i in range(5)) + list(
-                fig.add_subplot(gsp[2, i]) for i in range(5)
-            )
-            iax = fig.add_subplot(gsp[1, 2])
-            img(iax, img_tensors[i])
-
-            data = []
-            for j in range(10):
-                if img_tensors[i].grad is not None:
-                    img_tensors[i].grad = None
-                pred_tensors[i][0, j].backward(retain_graph=True)
-                data.append(nrm(img_tensors[i].grad))
-
-            arrs, mins, maxs = zip(*data)
-            MIN, MAX = min(mins), max(maxs)
-            mappables = []
-            for j in range(10):
-                mappables.append(bprop(axs[j], z=arrs[j], n=j, vmin=MIN, vmax=MAX))
-            fig.suptitle("Receptive field for {}".format(i))
-            fig.subplots_adjust(
-                wspace=0, hspace=0.25, left=0.0, right=0.8, bottom=0.05, top=0.9
-            )
-            cax = fig.add_axes([0.85, 0.05, 0.03, 0.85])  # left bottom width height
-            cb = fig.colorbar(mappable=mappables[0], cax=cax, ax=axs)
-            pdf.savefig(fig, dpi=300)
-            plt.close()
-        d = pdf.infodict()
-        d["Title"] = "Gradients at Epoch {}".format(epoch)
-
-
 def get_classwise_preds(y_true, y_pred):
     aucs = np.zeros(10, dtype=np.float32)
     accus = np.zeros(10, dtype=np.float32)
@@ -228,33 +149,6 @@ def get_classwise_preds(y_true, y_pred):
 
         accus[i] = accu
         aucs[i] = auc
-    return aucs, accus
-
-
-def plot_predictions(epoch, loss, y_true, y_pred, directory):
-    aucs = []
-    accus = []
-    preds = np.argmax(y_pred, axis=1)
-    with PdfPages(os.path.join(directory, "test-{}.pdf".format(epoch))) as pdf:
-        for i in range(10):
-            fig = plt.figure(figsize=(9, 6))
-            gsp = fig.add_gridspec(6, 3)
-            ax = [fig.add_subplot(gsp[0:2, :]), fig.add_subplot(gsp[3:, :])]
-            fig.suptitle("Network Predictions for {}".format(i))
-
-            pred_check = preds[y_true == i]
-            accus.append(np.sum(pred_check == i) / len(pred_check))
-
-            yt = np.int32(y_true == i)
-            yp = y_pred[:, i]
-            aucs.append(plot_roc(ax[0], yt, yp, i))
-            plot_error_splits(ax[1], y_true, preds, i)
-
-            pdf.savefig(fig, dpi=300)
-
-            plt.close()
-        d = pdf.infodict()
-        d["Title"] = "Predictions at Epoch {}".format(epoch)
     return aucs, accus
 
 
