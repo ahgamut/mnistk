@@ -16,9 +16,9 @@ import json
 import base64
 
 try:
-    import torchrec
+    import torchrecorder
 except Exception as e:
-    print("No torchrec, can't visualize network")
+    print("No torchrecorder, can't visualize network")
 
 
 class NDArrayEncoder(json.JSONEncoder):
@@ -56,7 +56,7 @@ class NDArrayDecoder(json.JSONDecoder):
 
 def get_recorder(net, input_shapes):
     try:
-        rec = torchrec.record(net, input_shapes, name=net.__class__.__name__)
+        rec = torchrecorder.record(net, input_shapes, name=net.__class__.__name__)
         return rec
     except Exception as e:
         print(e)
@@ -64,7 +64,7 @@ def get_recorder(net, input_shapes):
 
 
 def plot_structure(rec, directory, fmt="svg"):
-    g = torchrec.make_dot(rec, render_depth=1)
+    g = torchrecorder.make_dot(rec, render_depth=1)
     g.format = fmt
     g.render(filename="network", directory=directory, view=False, cleanup=True)
 
