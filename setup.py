@@ -13,7 +13,6 @@ setup(
     long_description_content_type="text/markdown",
     install_requires=[
         "numpy>=1.17.2",
-        "click==7.0",
         "scikit-learn==0.20.3",
         "h5py==2.10.0",
         "pandas==0.24.2",
