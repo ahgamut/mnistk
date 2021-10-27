@@ -105,7 +105,7 @@ class Calibrator(object):
         self.gen_quantile = E[
             int(np.ceil((1 - self.alpha) * (1 + self.tuning_samples)))
         ]
-        print("generalized quantile is", self.gen_quantile)
+        # print("generalized quantile is", self.gen_quantile)
 
     def get_C_single(self, index):
         scores = self._raw_scores[index]

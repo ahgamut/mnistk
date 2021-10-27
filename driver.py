@@ -8,6 +8,7 @@ Description: Driver for the mnistk package
 import click
 import json
 import mnistk
+import time
 
 
 @click.group()
@@ -129,7 +130,9 @@ def calibrate(id_, alpha, kreg, lamda):
     run RAPS calibration on the given network ID
     for all epochs and obtain set sizes
     """
+    t = time.time()
     mnistk.run.write_confidence_info(id_, alpha, kreg, lamda)
+    print(time.time() - t)
 
 
 if __name__ == "__main__":
