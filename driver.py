@@ -87,5 +87,50 @@ def collect(result_dir):
     mnistk.save_rankings(result_dir)
 
 
+@main.command()
+@click.option(
+    "-i",
+    "--id",
+    "id_",
+    prompt="ID of the network to run",
+    type=int,
+    default=0,
+    show_default=True,
+)
+@click.option(
+    "--alpha",
+    "alpha",
+    prompt="1 - confidence",
+    type=float,
+    default=0.05,
+    prompt_required=False,
+    show_default=True,
+)
+@click.option(
+    "--kreg",
+    "kreg",
+    prompt="k regularization value",
+    type=int,
+    default=3,
+    prompt_required=False,
+    show_default=True,
+)
+@click.option(
+    "--lamda",
+    "lamda",
+    prompt="lamda regularization value",
+    type=float,
+    default=0.005,
+    prompt_required=False,
+    show_default=True,
+)
+def calibrate(id_, alpha, kreg, lamda):
+    """
+    run RAPS calibration on the given network ID
+    for all epochs and obtain set sizes
+    """
+    mnistk.run.write_confidence_info(id_, alpha, kreg, lamda)
+
+
 if __name__ == "__main__":
     main()

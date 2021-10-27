@@ -56,7 +56,9 @@ class NDArrayDecoder(json.JSONDecoder):
 
 def get_recorder(net, input_shapes):
     try:
-        rec = torchrecorder.record(net, input_shapes, name=net.__class__.__name__)
+        rec = torchrecorder.record(
+            net=net, input_shapes=input_shapes, name=net.__class__.__name__
+        )
         return rec
     except Exception as e:
         print(e)
@@ -164,13 +166,14 @@ def save_predictions(y_pred, directory, run_name, epoch):
 
 
 def save_props(record_dict, directory, filename="properties.json"):
-    record_dict["train loss"] = np.array(record_dict["train loss"], dtype=np.float32)
-    for k in record_dict["test accuracy"].keys():
-        record_dict["test accuracy"][k] = np.array(
-            record_dict["test accuracy"][k], dtype=np.float32
-        )
-        record_dict["test AUC"][k] = np.array(
-            record_dict["test AUC"][k], dtype=np.float32
-        )
+    if record_dict.get("train loss", None):
+        record_dict["train loss"] = np.array(record_dict["train loss"], dtype=np.float32)
+        for k in record_dict["test accuracy"].keys():
+            record_dict["test accuracy"][k] = np.array(
+                record_dict["test accuracy"][k], dtype=np.float32
+            )
+            record_dict["test AUC"][k] = np.array(
+                record_dict["test AUC"][k], dtype=np.float32
+            )
     with open(os.path.join(directory, filename), "w") as f:
         json.dump(record_dict, f, cls=NDArrayEncoder)

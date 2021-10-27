@@ -12,3 +12,4 @@ from .network import construct
 from .trainer import Trainer
 from .tester import Tester
 from .utils import NDArrayEncoder, NDArrayDecoder
+from .calibrator import write_confidence_info
