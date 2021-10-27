@@ -25,6 +25,8 @@ import json
 class Calibrator(object):
 
     dataset = None
+    dataloader = None
+    batch_size = 10
     tuning_samples = 10000
 
     def __init__(self, alpha=0.1, k_reg=5, lamda=0.005):
@@ -36,6 +38,9 @@ class Calibrator(object):
                 transform=transforms.Compose(
                     [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
                 ),
+            )
+            Calibrator.dataloader = torch.utils.data.DataLoader(
+                Calibrator.dataset, batch_size=self.batch_size, shuffle=False
             )
         self.net = None
         self.gen_quantile = 0
@@ -59,46 +64,53 @@ class Calibrator(object):
             map_location=torch.device("cpu"),
         )
         self._load_network(net_name, weights)
+        self._get_raw_scores()
+
+    def _get_raw_scores(self):
+        self._raw_scores = np.zeros((len(self.dataset), 10), np.float64)
+        self._raw_labels = np.zeros(len(self.dataset), np.uint32)
+
+        i = 0
+        with torch.no_grad():
+            for inp, label in self.dataloader:
+                self._raw_scores[i : i + self.batch_size] = np.exp(
+                    self.net(inp).cpu().detach().numpy()
+                )
+                self._raw_labels[i : i + self.batch_size] = label.cpu().detach().numpy()
+                i += self.batch_size
+
+        self._raw_indices = np.flip(self._raw_scores.argsort(axis=1), axis=1)
+        self._raw_scores.sort(axis=1)
+        self._raw_scores = np.flip(self._raw_scores, axis=1)
 
     def calibrate(self):
         # print("calibrating....")
         L = np.zeros(self.tuning_samples, dtype=np.uint32)
         E = np.zeros(self.tuning_samples, dtype=np.float32)
         rand = True
-        indices = np.arange(0, 10)
+        scores = self._raw_scores[: len(L)]
+        indices = self._raw_indices[: len(L)]
+        labels = self._raw_labels[: len(L)]
+
+        aa, L = (indices.T == labels).T.nonzero()
         for i in range(self.tuning_samples):
-            inp, label = self.dataset[i]
-            scores = np.exp(self.net(inp).cpu().detach().numpy())[0]
-            # print(scores, scores.argsort())
-            indices = scores.argsort()[::-1]
-            scores.sort()
-            scores = scores[::-1]
-            # print(scores, indices, label)
-            L[i] = (indices == label).nonzero()[0][0]
-            E[i] = np.sum(scores[: L[i] + 1]) + self.lamda * max(
+            E[i] = np.sum(scores[i, : L[i] + 1]) + self.lamda * max(
                 0, L[i] - self.k_reg + 1
             )
-            if rand:
-                u = np.random.uniform(0, 1, 1)[0]
-                E[i] = E[i] - scores[L[i]] + u * scores[L[i]]
+        if rand:
+            u = np.random.uniform(0, 1, len(L))
+            E = E - scores[aa, L] + u * scores[aa, L]
 
         E.sort()
         self.gen_quantile = E[
             int(np.ceil((1 - self.alpha) * (1 + self.tuning_samples)))
         ]
-        # print("generalized quantile is", self.gen_quantile)
+        print("generalized quantile is", self.gen_quantile)
 
     def get_C_single(self, index):
-        inp, label = self.dataset[index]
-        with torch.no_grad():
-            scores = self.net(inp)
-        return label, self.get_C_scores(scores)
-
-    def get_C_scores(self, scores_t):
-        scores = np.exp(scores_t.cpu().detach().numpy())[0]
-        indices = scores.argsort()[::-1]
-        scores.sort()
-        scores = scores[::-1]
+        scores = self._raw_scores[index]
+        indices = self._raw_indices[index]
+        label = self._raw_labels[index]
         L = 10
         for j in range(10):
             sc = np.sum(scores[0 : j + 1]) + self.lamda * max(0, L - self.k_reg)
@@ -115,7 +127,7 @@ class Calibrator(object):
             U = np.random.uniform(0, 1, 1)[0]
             if V < U:
                 L = L - 1
-        return indices[: L + 1], scores[: L + 1]
+        return label, (indices[: L + 1], scores[: L + 1])
 
     def get_raps_full_info(self):
         set_sizes = np.zeros(len(self.dataset) - self.tuning_samples, dtype=np.float32)
