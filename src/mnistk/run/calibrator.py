@@ -40,7 +40,10 @@ class Calibrator(object):
                 ),
             )
             Calibrator.dataloader = torch.utils.data.DataLoader(
-                Calibrator.dataset, batch_size=self.batch_size, shuffle=False
+                Calibrator.dataset,
+                batch_size=self.batch_size,
+                shuffle=False,
+                num_workers=1,
             )
         self.net = None
         self.gen_quantile = 0
@@ -131,7 +134,9 @@ class Calibrator(object):
 
     def get_raps_full_info(self):
         set_sizes = np.zeros(len(self.dataset) - self.tuning_samples, dtype=np.float32)
-        truth_index = np.zeros(len(self.dataset) - self.tuning_samples, dtype=np.int32)
+        truth_index = (
+            np.zeros(len(self.dataset) - self.tuning_samples, dtype=np.int32) - 1
+        )
         for i in range(len(set_sizes)):
             actual_i = i + self.tuning_samples
             truth, (ind, scores) = self.get_C_single(actual_i)
