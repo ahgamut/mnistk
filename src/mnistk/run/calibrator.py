@@ -103,7 +103,7 @@ class Calibrator(object):
             E = E - scores[aa, L] + U * scores[aa, L]
 
         self.gen_quantile = np.quantile(E, 1 - self.alpha, interpolation="higher")
-        print("generalized quantile is", self.gen_quantile)
+        # print("generalized quantile is", self.gen_quantile)
 
     def get_C_single(self, index):
         scores = self._raw_scores[index]
