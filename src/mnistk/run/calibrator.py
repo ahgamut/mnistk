@@ -26,10 +26,10 @@ class Calibrator(object):
 
     dataset = None
     dataloader = None
-    batch_size = 10
+    batch_size = 100
     tuning_samples = 10000
 
-    def __init__(self, alpha=0.1, k_reg=5, lamda=0.005):
+    def __init__(self, alpha=0.1, k_reg=5, lamda=0.005, rand=True):
         if Calibrator.dataset is None:
             Calibrator.dataset = datasets.QMNIST(
                 "data",
@@ -50,6 +50,7 @@ class Calibrator(object):
         self.alpha = alpha
         self.k_reg = k_reg
         self.lamda = lamda
+        self.rand = rand
 
     def _load_network(self, net_name, weights):
         # Caller responsible for ensuring weights match
@@ -85,38 +86,32 @@ class Calibrator(object):
         self._raw_indices = np.flip(self._raw_scores.argsort(axis=1), axis=1)
         self._raw_scores.sort(axis=1)
         self._raw_scores = np.flip(self._raw_scores, axis=1)
+        self._raw_c_scores = np.cumsum(self._raw_scores, axis=1)
 
     def calibrate(self):
         # print("calibrating....")
         L = np.zeros(self.tuning_samples, dtype=np.uint32)
-        E = np.zeros(self.tuning_samples, dtype=np.float32)
-        rand = True
         scores = self._raw_scores[: len(L)]
         indices = self._raw_indices[: len(L)]
         labels = self._raw_labels[: len(L)]
+        c_scores = self._raw_c_scores[: len(L)]
 
         aa, L = (indices.T == labels).T.nonzero()
-        for i in range(self.tuning_samples):
-            E[i] = np.sum(scores[i, : L[i] + 1]) + self.lamda * max(
-                0, L[i] - self.k_reg + 1
-            )
-        if rand:
-            u = np.random.uniform(0, 1, len(L))
-            E = E - scores[aa, L] + u * scores[aa, L]
+        E = c_scores[aa, L] + self.lamda * np.maximum(0, L - self.k_reg + 1)
+        if self.rand:
+            U = np.random.uniform(0, 1, len(L))
+            E = E - scores[aa, L] + U * scores[aa, L]
 
-        E.sort()
-        self.gen_quantile = E[
-            int(np.ceil((1 - self.alpha) * (1 + self.tuning_samples)))
-        ]
-        # print("generalized quantile is", self.gen_quantile)
+        self.gen_quantile = np.quantile(E, 1 - self.alpha, interpolation="higher")
+        print("generalized quantile is", self.gen_quantile)
 
     def get_C_single(self, index):
         scores = self._raw_scores[index]
         indices = self._raw_indices[index]
         label = self._raw_labels[index]
-        L = 10
+        L = -1
         for j in range(10):
-            sc = np.sum(scores[0 : j + 1]) + self.lamda * max(0, L - self.k_reg)
+            sc = np.sum(scores[0 : j + 1]) + self.lamda * max(0, j - self.k_reg)
             if sc > self.gen_quantile:
                 L = j
                 break
@@ -128,7 +123,7 @@ class Calibrator(object):
                 + scores[L - 1]
             ) / scores[L - 1]
             U = np.random.uniform(0, 1, 1)[0]
-            if V < U:
+            if self.rand and V < U:
                 L = L - 1
         return label, (indices[: L + 1], scores[: L + 1])
 
